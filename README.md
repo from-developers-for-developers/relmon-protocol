@@ -181,12 +181,9 @@ Compact, single-string representations suitable for **URLs**, **QR codes**, or *
 
 | Scheme | Description | Example |
 | -------- | ------- |  ------- | 
-| `relmon/json://...` | JSON representation encoded in URI | TODO |
-| `relmon/xml://...` | XML representation encoded in URI | TODO |
-| `relmon/binary://...` | Packed/binary representation | TODO |
-| `relmon/short://...` | Minimalistic textual representation | TODO |
-| `relmon/base64://...` | Base64-encoded representation of packed data | TODO |
-| `relmon/sha256://...` | Hashed representation for validation purposes | TODO |
+| `relmon/json://...` | JSON representation (as base64) encoded in URI | `relmon/json://eyJwciI6InJlbG1vbkAxLjAuMDpjIiwibmV0IjoiMTAwLjAwIiwiZ3Jvc3MiOiIxMjEuMDAiLCJ0YXgiOiIyMS4wMCJ9` |
+| `relmon/xml://...` | XML representation (as base64) encoded in URI | `relmon/xml://PFJlbE1vbiBwcm90b2NvbD0icmVsbW9uQDEuMC4wOmMubSI+PG4+MTAwMDA8L24+PGc+MTIxMDA8L2c+PHQ+MjEwMDwvdD48L1JlbE1vbj4=` |
+| `relmon/min://...` | Minimalistic textual representation containing only the protocol version, net, gross and tax values separated by `;` | `relmon/min://1.0.0:m;10000;12100;2100` |
 
 ## FAQ and design rationale
 
