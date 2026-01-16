@@ -161,6 +161,33 @@ RelMon defines conformance profiles to help implementers achieve predictable int
 
 Implementers MAY declare which profile their system conforms to, ensuring that exchanging systems can verify compatibility and expectations before transfer.
 
+## Specific format implementations
+
+The RelMon protocol defines multiple **concrete format implementations** to represent the abstract monetary model. This section provides a high-level overview and references for each format.
+
+The **abstract model** remains unchanged across formats; these implementations define **how the abstract fields map to JSON, XML, or URI-based**.
+
+### JSON
+
+... TODO
+
+### XML
+
+... TODO
+
+### URI-based notations
+
+Compact, single-string representations suitable for **URLs**, **QR codes**, or **lightweight transfers**.
+
+| Scheme | Description | Example |
+| -------- | ------- |  ------- | 
+| `relmon/json://...` | JSON representation encoded in URI | TODO |
+| `relmon/xml://...` | XML representation encoded in URI | TODO |
+| `relmon/binary://...` | Packed/binary representation | TODO |
+| `relmon/short://...` | Minimalistic textual representation | TODO |
+| `relmon/base64://...` | Base64-encoded representation of packed data | TODO |
+| `relmon/sha256://...` | Hashed representation for validation purposes | TODO |
+
 ## FAQ and design rationale
 
 This section is **informative only** and does not contain requirements. It explains key design decisions of the RelMon protocol to help implementers understand its rationale.
