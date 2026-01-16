@@ -111,7 +111,7 @@ MonetaryComponent :=
 - **Optional metadata**: `comment` in `MonetaryComponent` is purely informational and MUST NOT affect numeric calculations. This field is ALWAYS optional.
 - **Format agnostic**: The abstract model does not prescribe JSON, XML, URI, or binary layouts. Concrete representations map abstract fields to specific formats, as defined in separate sections.
 
-#### Validation rules
+### Validation rules
 
 The RelMon protocol defines the following rules for validating monetary values:
 
@@ -133,7 +133,7 @@ The RelMon protocol defines the following rules for validating monetary values:
     - The optional `taxRate` in a component MUST comply with the format defined in the abstract model.
     - The optional `comment` in a component MUST NOT affect numeric calculations.
     
-#### Signed / Negative values semantics
+### Signed / Negative values semantics
 
 Monetary values in RelMon may be negative to represent refunds, discounts, credits, or reversals. Implementations MUST handle negative values as follows:
 
@@ -145,7 +145,7 @@ Monetary values in RelMon may be negative to represent refunds, discounts, credi
 
 Implementations MUST ensure that arithmetic consistency rules (gross = net + tax and component sums) remain valid even when values are negative.
 
-#### Conformance Profiles
+### Conformance Profiles
 
 RelMon defines conformance profiles to help implementers achieve predictable interoperability:
 
@@ -160,3 +160,45 @@ RelMon defines conformance profiles to help implementers achieve predictable int
     - Mirrors the Core or Extended profile, but uses **compact field names** as defined in Compact mode (c).
 
 Implementers MAY declare which profile their system conforms to, ensuring that exchanging systems can verify compatibility and expectations before transfer.
+
+## FAQ and design rationale
+
+This section is **informative only** and does not contain requirements. It explains key design decisions of the RelMon protocol to help implementers understand its rationale.
+
+### **Why separate `net`, `tax`, and `gross`?**
+
+To make the protocol *calculation-free*. Systems do not need to compute `tax` or `gross` from `net`; each value is explicitly specified. This eliminates differences caused by rounding or arithmetic in heterogeneous systems.
+
+### Why is `taxRate` a decimal(6,3)?
+
+To support tax rates with *fractional precision*, e.g., 12.35% or 0.625%. The (6,3) format allows up to 999.999% while keeping three decimal places, which covers nearly all real-world tax regimes.
+
+### Why provide a `precision` field?
+
+Precision defines the **maximum total digits and fractional scale** for monetary values. This ensures that values are consistently formatted and interpreted across systems. It is optional, but required for extended mode.
+
+### Why include a `rounding` field?
+
+Rounding modes specify how **intermediate or formatted values** are handled when reduction of scale occurs. Specifying the mode ensures consistent rounding behavior across implementations.
+
+Included rounding modes are all **finance-relevant**: `half-up`, `half-down`, `half-even`, `up`, `down`.
+
+### Why have Extended, Compact, and Minors modes?
+
+- **Extended** (`e`): All fields included, full precision and reconstructibility
+- **Compact** (`c`): Shortened field names to save bandwidth or storage
+- **Minors** (`m`): Integer representation for systems that operate in the smallest unit (e.g., cents, satoshis)
+
+These modes give flexibility while maintaining **semantic consistency**.
+
+### Can RelMon handle cryptocurrencies like BTC or ETH?
+
+Yes. While ISO 4217 codes are suggested for fiat currencies, **custom currencies** are supported via `unit` field in **extended mode**. Minors mode can store satoshis, wei, or other smallest units as integers.
+
+### Why allow negative values?
+
+Negative values represent refunds, reversals, credits, or discounts. Consistent rules ensure that **arithmetic invariants** (`gross = net + tax`) and component sums remain valid, even when values are negative.
+
+### Why is the protocol language, storage, and format agnostic?
+
+To allow **maximum interoperability**. The abstract model defines **semantic meaning**, while concrete format implementations (JSON, XML, URI, binary) map these fields into specific representations. This ensures consistency across systems, programming languages, and storage backends, and eventually allows to scale and expand on wide ranges of computing systems.
