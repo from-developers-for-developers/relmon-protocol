@@ -169,21 +169,66 @@ The **abstract model** remains unchanged across formats; these implementations d
 
 ### JSON
 
-... TODO
+The example here includes the extended mode of the RelMon object, with `components`. All modes are supported.
+
+```json
+{
+  "protocol": "relmon@1.0.0:e",
+  "net": "100.00",
+  "tax": "21.00",
+  "gross": "121.00",
+  "taxRate": "0.210",
+  "unit": "EUR",
+  "precision": [5, 2],
+  "rounding": "hup",
+  "components": [
+    {
+      "net": "50.00",
+      "tax": "10.50",
+      "taxRate": "0.210",
+      "comment": "Base price of item 1"
+    },
+    {
+      "net": "50.00",
+      "tax": "10.50",
+      "taxRate": "0.210",
+      "comment": "Base price of item 2"
+    }
+  ]
+}
+```
 
 ### XML
 
-... TODO
+The example here includes the extended mode of the RelMon object, without `components`. All modes are supported.
+
+```xml
+<RelMon protocol="relmon@1.0.0:e">
+  <net>100.00</net>
+  <tax>21.00</tax>
+  <gross>121.00</gross>
+  <taxRate>0.210</taxRate>
+  <unit>EUR</unit>
+  <precision>
+    <maxDigits>5</maxDigits>
+    <scale>2</scale>
+  </precision>
+  <rounding>hup</rounding>
+</RelMon>
+```
 
 ### URI-based notations
 
-Compact, single-string representations suitable for **URLs**, **QR codes**, or **lightweight transfers**.
+Compact, single-string representations suitable for **URLs**, **QR codes**, or **lightweight transfers**. 
+
+All modes are supported in all URI-based notations.
 
 | Scheme | Description | Example |
 | -------- | ------- |  ------- | 
 | `relmon/json://...` | JSON representation (as base64) encoded in URI | `relmon/json://eyJwciI6InJlbG1vbkAxLjAuMDpjIiwibmV0IjoiMTAwLjAwIiwiZ3Jvc3MiOiIxMjEuMDAiLCJ0YXgiOiIyMS4wMCJ9` |
 | `relmon/xml://...` | XML representation (as base64) encoded in URI | `relmon/xml://PFJlbE1vbiBwcm90b2NvbD0icmVsbW9uQDEuMC4wOmMubSI+PG4+MTAwMDA8L24+PGc+MTIxMDA8L2c+PHQ+MjEwMDwvdD48L1JlbE1vbj4=` |
 | `relmon/min://...` | Minimalistic textual representation containing only the protocol version, net, gross and tax values separated by `;` | `relmon/min://1.0.0:m;10000;12100;2100` |
+| `relmon/protobuf://...` | Protobuf repsentation (as base64) encoded in URI | `relmon/protobuf://TODO` |
 
 ## FAQ and design rationale
 
