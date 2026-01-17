@@ -84,6 +84,7 @@ MonetaryComponent :=
 - **Monetary values**: `net`, `tax`, and `gross` are exact and MUST preserve full precision. 
     - Implementations MUST NOT perform floating-point arithmetic. 
     - These fields MUST be represented as decimals unless the `m` mode is used.
+- **Tax rate**: the `taxRate` on the root level of `RelMonObject` MAY be present if the tax rate is the same across all components.
 - **Consistency rules**: `gross = net + tax`.
 - **Units**: When the unit represents a fiat currency, implementations SHOULD use the corresponding ISO 4217 currency code in the `unit` field. Examples: `EUR`, `USD`, `RUB`.
 - **Precision**: The optional `precision` field defines `[maxDigits, scale]`, where `maxDigits` defines the total amount of digits in the value, and `scale` the amount of digits after the point. All decimal values in the fields `net`, `tax`, and `gross` MUST comply if present.
@@ -100,13 +101,13 @@ RelMon defines 3 modes that modify the format and the set of the fields of the p
 
 - **Extended**: Extended mode (`e`) indicates that `RelMonObject` MUST contain **all** fields defined in the abstract model, including those normally optional. The **only exception** is the `components` field, which MAY be omitted or be empty.
 - **Compact**: Compact mode (`c`) defines that the names of the fields of the `RelMonObject` are written in the compact mode. Compact mode affects field identifiers only and MUST NOT alter semantic meaning or numeric behavior. This mode MUST be identified as `c`.
-    - `protocol` is represented via `pr`
+    - `protocol` is represented via `p`
     - `net` is represented via `n`
     - `tax` is represented via `t`
     - `gross` is represented via `g`
     - `taxRate` is represented via `tr`
     - `unit` is represented via `u`
-    - `precision` is represented via `p`
+    - `precision` is represented via `pr`
     - `rounding` is represented via `r`
     - `components` is represented via `cs`
 - **Minors**: Minors mode (`m`) defines that the fields `net`, `tax` and `gross` of `RelMonObject` are the smallest units of the currency or asset and MUST be represented as integers. This mode MUST be identified as `m`.
@@ -189,6 +190,21 @@ RelMon defines conformance profiles to help implementers achieve predictable int
 
 Implementers MAY declare which profile their system conforms to, ensuring that exchanging systems can verify compatibility and expectations before transfer.
 
+### Summary table of the model fields
+
+| Field | Compact notation | Type | Optional | Description |
+| ------ | ------------------------ | ------- | ----------- | --------------- |
+| protocol | p | ProtocolIdentifier | Required | The protocol version and modes |
+| net | n | Decimal \| Integer | Required | Total net amount |
+| tax | t | Decimal \| Integer | Required | Total tax amount |
+| gross | g | Decimal \| Integer | Required | Total gross amount |
+| taxRate | tr | Decimal | Always optional | The tax rate if it is the same for all components |
+| unit | u | Text | Optional, unless **extended** mode is used | Unit code (e.g. ISO4217) |
+| precision | pr | DecimalPrecision | Optional, unless **extended** mode is used | Decimal value precision |
+| rounding | r | Text | Optional, unless **extended** mode is used or actual rounding is applied | Rounding mode applied |
+| components | cs | MonetaryComponent[] | Always optional | List of components with their own `net` `tax` and `taxRate` values |
+| comment | c | Text | Always optional | Optional arbitrary comment for a component |
+
 ## Concrete default data format implementations
 
 RelMon defines multiple **concrete default data format implementations** to represent the abstract monetary model. This section provides a high-level overview and references for each format.
@@ -201,57 +217,75 @@ The **abstract model** remains unchanged across formats; these implementations d
 
 ### JSON
 
-The example here includes the **extended** mode of RelMon object, including `components` fields.
-
 All modes of the protocol are supported.
 
 The name of the element containing RelMon object MAY be arbitrary.
 
+The example here includes the **extended** mode of RelMon object, including `components` fields.
+
 ```json
 {
-  "protocol": "relmon@1.0.0:e",
-  "net": "100.00",
-  "tax": "21.00",
-  "gross": "121.00",
-  "taxRate": "0.210",
-  "unit": "EUR",
-  "precision": [5, 2],
-  "rounding": "hup",
-  "components": [
-    {
-      "net": "50.00",
-      "tax": "10.50",
-      "taxRate": "0.210",
-      "comment": "Base price of item 1"
-    },
-    {
-      "net": "50.00",
-      "tax": "10.50",
-      "taxRate": "0.210",
-      "comment": "Base price of item 2"
-    }
-  ]
+    "protocol": "relmon@1.0.0:e",
+    "net": "100.00",
+    "tax": "21.00",
+    "gross": "121.00",
+    "taxRate": "0.210",
+    "unit": "EUR",
+    "precision": [5, 2],
+    "rounding": "hup",
+    "components": [
+        {
+            "net": "50.00",
+            "tax": "10.50",
+            "taxRate": "0.210",
+            "comment": "Base price of item 1"
+        },
+        {
+            "net": "50.00",
+            "tax": "10.50",
+            "taxRate": "0.210",
+            "comment": "Base price of item 2"
+        }
+    ]
 }
 ```
 
-### XML
+Another example as core profile in **compact** mode.
 
-The example here includes the **extended** mode of RelMon object, excluding `components` fields.
+```json
+{"p": "relmon@1.0.0:c", "n": "100.00", "t": "21.00", "g": "121.00"}
+```
+
+### XML
 
 All modes of the protocol are supported.
 
 The root name of the element MAY be arbitrary (e.g. `<Money>`, `<Price>`, etc.).
 
+The example here includes the **extended** mode of RelMon object, excluding `components` fields.
+
 ```xml
 <RelMon>
-  <protocol>relmon@1.0.0:e</protocol>
-  <net>100.00</net>
-  <tax>21.00</tax>
-  <gross>121.00</gross>
-  <taxRate>0.210</taxRate>
-  <unit>EUR</unit>
-  <precision maxDigits="5" scale="2"/>
-  <rounding>hup</rounding>
+    <protocol>relmon@1.0.0:e</protocol>
+    <net>100.00</net>
+    <tax>21.00</tax>
+    <gross>121.00</gross>
+    <taxRate>0.210</taxRate>
+    <unit>EUR</unit>
+    <precision maxDigits="5" scale="2"/>
+    <rounding>hup</rounding>
+</RelMon>
+```
+
+Another example as core profile in **compact** and **minors** mode, passing optional `unit` field.
+
+```xml
+<RelMon>
+    <p>relmon@1.0.0:c.m</p>
+    <n>10000</n>
+    <t>2100</t>
+    <g>12100</g>
+    <u>EUR</u>
 </RelMon>
 ```
 
