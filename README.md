@@ -8,7 +8,7 @@ RelMon is designed to enable reliable exchange of monetary data between systems.
 
 RelMon is programming language, storage, and data format agnostic, defining only the **abstract logical model** and **the concrete default data format implementations**.
 
-## Key Words
+## Key words
 
 The key words **MUST**, **MUST NOT**, **REQUIRED**, **SHALL**, **SHALL NOT**, **SHOULD**, **SHOULD NOT**, **RECOMMENDED**, **MAY**, and **OPTIONAL** in this document are to be interpreted as described in [RFC 2119](https://datatracker.ietf.org/doc/html/rfc2119).
 
@@ -28,7 +28,7 @@ Protocol identifiers include the version, for example:
 
 Implementations **MUST respect protocol versioning** to ensure compatibility between systems.
 
-## Abstract Model
+## Abstract logical model
 
 ### Notation
 
@@ -174,7 +174,7 @@ Monetary values in RelMon may be negative. Implementations MUST handle negative 
 
 Implementations MUST ensure that arithmetic consistency rules (`gross = net + tax` and component sums) remain valid even when values are negative.
 
-### Conformance Profiles
+### Conformance profiles
 
 RelMon defines conformance profiles to help implementers achieve predictable interoperability:
 
@@ -345,3 +345,9 @@ Negative values represent refunds, reversals, credits, or discounts. Consistent 
 ### Why is the protocol language, storage, and data format agnostic?
 
 To allow **maximum interoperability**. The abstract model defines **semantic meaning**, while concrete data format implementations (JSON, XML, URI) map these fields into specific representations. This ensures consistency across systems, programming languages, and storage backends, and eventually allows to scale and expand on wide ranges of computing systems.
+
+## Changelog
+
+| Date | Version | Description |
+| ------ | ---------- | --------------- |
+| 2026-01-17 | 1.0.0 | First version of the protocol published |
