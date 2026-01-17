@@ -1,5 +1,27 @@
 # Reliable Monetary data protocol (RelMon protocol)
 
+## Table of contents
+
+1. [Introduction](#Introduction)
+2. [Key words](#key-words)
+3. [Versioning](#versioning)
+4. [License](#license)
+5. [Abstract logical model](#abstract-logical-model)
+    1. [Notation](#notation)
+    2. [Specification clarification](#specification-clarification)
+    3. [Protocol modes](#protocol-modes)
+    4. [Rounding modes](#rounding-modes)
+    5. [Validation rules](#validation-rules)
+    6. [Signed values semantics](#signed-values-semantics)
+    7. [Conformance profiles](#conformance-profiles)
+    8. [Summary table of the model fields](#summary-table-of-the-model-fields)
+6. [Concrete default data format implementations](#concrete-default-data-format-implementations)
+    1. [JSON](#json)
+    2. [XML](#xml)
+    3. [URI-based notations](#uri-based-notations)
+7. [FAQ and design rationale](#faq-and-design-rationale)
+8. [Changelog](#changelog)
+
 ## Introduction
 
 This document specifies the **RelMon protocol** (Reliable Monetary Data Protocol, further referred as **RelMon**) and defines its **concrete default data format implementations**.
@@ -7,6 +29,12 @@ This document specifies the **RelMon protocol** (Reliable Monetary Data Protocol
 RelMon is designed to enable reliable exchange of monetary data between systems. By standardizing the structure and semantics of monetary data, it ensures interoperable implementations across diverse systems, preserving **exact monetary values**, full precision, consistent rounding, and a **calculation-free approach** for net, tax, and gross amounts.
 
 RelMon is programming language, storage, and data format agnostic, defining only the **abstract logical model** and **the concrete default data format implementations**.
+
+An example of using RelMon as JSON data format:
+
+```json
+{"protocol": "relmon@1.0.0", "net": "100.00", "tax": "21.00", "gross": "121.00"}
+```
 
 ## Key words
 
@@ -27,6 +55,25 @@ Protocol identifiers include the version, for example:
 - `relmon@1.0.0` – abstract protocol version 1.0.0
 
 Implementations **MUST respect protocol versioning** to ensure compatibility between systems.
+
+## License
+
+RelMon specification is published as an **open and freely usable standard**.
+
+This specification is licensed under the **Creative Commons Attribution 4.0 International (CC BY 4.0)** license.
+
+This means that:
+
+- Anyone **MAY use, implement, and distribute** the RelMon specification
+- Implementations **MAY be open-source or proprietary**
+- The specification **MAY be modified or extended**
+- Proper **attribution to the RelMon project** is REQUIRED
+
+The license applies **only to the specification text itself**.
+
+It does **not impose any licensing requirements** on implementations, SDKs, or software that uses the RelMon protocol.
+
+For the full license text, see [this file](LICENSE).
 
 ## Abstract logical model
 
@@ -162,7 +209,7 @@ RelMon defines the following rules for validating monetary values:
     - The optional `taxRate` in a component MUST comply with the format defined in the abstract model.
     - The optional `comment` in a component MUST NOT affect numeric calculations.
     
-### Signed / Negative values semantics
+### Signed values semantics
 
 Monetary values in RelMon may be negative. Implementations MUST handle negative values as follows:
 
