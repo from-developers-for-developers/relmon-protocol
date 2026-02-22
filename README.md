@@ -156,7 +156,7 @@ CalculationScope: text = "r" | "a"
 
 Rounding: object = {
     mode?: text = "hup" | "hdown" | "heven" | "up" | "down",
-    appliedTo?: text = "tax" | "total"
+    application?: text = "tax" | "total"
 }
 
 MonetaryComponent: object =
@@ -408,18 +408,18 @@ Determinism level further will be referred to as "DL".
 
 **Root-level fields**
 
-| Field      | Compact notation | Type                | Possible values                                                                        | Default value      | DL1                                   | DL2                                   | DL3                                   | Description                                               |
-|------------|------------------|---------------------|----------------------------------------------------------------------------------------|--------------------|---------------------------------------|---------------------------------------|---------------------------------------|-----------------------------------------------------------|
-| protocol   | p                | ProtocolIdentifier  | N/A                                                                                    | N/A                | Required                              | Required                              | Required                              | The protocol version, determinism level and modes         |
-| net        | n                | decimal \| integer  | N/A                                                                                    | N/A                | Derived from `gross`.                 | Required                              | Optional (if `gross` provided)        | Total net amount                                          |
-| gross      | g                | decimal \| integer  | N/A                                                                                    | N/A                | Derived from `net`                    | Required                              | Optional (if `net` provided)          | Total gross amount                                        |
-| tax        | t                | decimal \| integer  | N/A                                                                                    | N/A                | Optional                              | Optional                              | Required                              | Total tax amount                                          |
-| taxRate    | tr               | decimal(6,3)        | N/A                                                                                    | N/A                | Required                              | Required                              | Optional                              | Tax rate if it is the same for all components             |
-| unit       | u                | text                | N/A                                                                                    | N/A                | Optional                              | Optional                              | Optional                              | Unit code (e.g. ISO4217)                                  |
-| precision  | pr               | integer             | N/A                                                                                    | N/A                | Required                              | Required                              | Optional                              | Decimal value precision                                   |
-| scope      | s                | text                | `c`, `r`                                                                               | `r`                | Optional                              | Optional                              | Optional                              | Calculation scope                                         |
-| rounding   | r                | text                | `[mode: "hup" \| "hdown" \| "heven" \| "up" \| "down", application: "tax" \| "total"]` | `["heven", "tax"]` | Required                              | Required                              | Optional                              | Rounding mode                                             |
-| components | cs               | MonetaryComponent[] | N/A                                                                                    | N/A                | Optional (if calculation scope = `r`) | Optional (if calculation scope = `r`) | Optional (if calculation scope = `r`) | List of components (necessary if calculation scope = `c`) |
+| Field                       | Compact notation | Type                | Possible values                                                                            | Default value                             | DL1                                   | DL2                                   | DL3                                   | Description                                               |
+|-----------------------------|------------------|---------------------|--------------------------------------------------------------------------------------------|-------------------------------------------|---------------------------------------|---------------------------------------|---------------------------------------|-----------------------------------------------------------|
+| protocol                    | p                | ProtocolIdentifier  | N/A                                                                                        | N/A                                       | Required                              | Required                              | Required                              | The protocol version, determinism level and modes         |
+| net                         | n                | decimal \| integer  | N/A                                                                                        | N/A                                       | Derived from `gross`.                 | Required                              | Optional (if `gross` provided)        | Total net amount                                          |
+| gross                       | g                | decimal \| integer  | N/A                                                                                        | N/A                                       | Derived from `net`                    | Required                              | Optional (if `net` provided)          | Total gross amount                                        |
+| tax                         | t                | decimal \| integer  | N/A                                                                                        | N/A                                       | Optional                              | Optional                              | Required                              | Total tax amount                                          |
+| taxRate                     | tr               | decimal(6,3)        | N/A                                                                                        | N/A                                       | Required                              | Required                              | Optional                              | Tax rate if it is the same for all components             |
+| unit                        | u                | text                | N/A                                                                                        | N/A                                       | Optional                              | Optional                              | Optional                              | Unit code (e.g. ISO4217)                                  |
+| precision                   | pr               | integer             | N/A                                                                                        | N/A                                       | Required                              | Required                              | Optional                              | Decimal value precision                                   |
+| scope                       | s                | text                | `c`, `r`                                                                                   | `r`                                       | Optional                              | Optional                              | Optional                              | Calculation scope                                         |
+| rounding{mode, application} | r{m, a}          | text                | `{"mode": "hup" \| "hdown" \| "heven" \| "up" \| "down", "application": "tax" \| "total"}` | `{"mode": "heven", "application": "tax"}` | Required                              | Required                              | Optional                              | Rounding mode                                             |
+| components                  | cs               | MonetaryComponent[] | N/A                                                                                        | N/A                                       | Optional (if calculation scope = `r`) | Optional (if calculation scope = `r`) | Optional (if calculation scope = `r`) | List of components (necessary if calculation scope = `c`) |
 
 **Component-level fields**
 
@@ -443,31 +443,33 @@ The **abstract model** remains unchanged across formats; these implementations d
 
 ### JSON
 
-All modes of the protocol are supported.
+- All modes of the protocol are supported.
+- The name of the element containing RelMon object MAY be arbitrary.
 
-The name of the element containing RelMon object MAY be arbitrary.
-
-The example here includes the **extended** mode of RelMon object, including `components` fields.
+The example here includes the RelMon object with DL3, including `components` fields (calculation scope = `c`).
 
 ```json
 {
-    "protocol": "relmon@1.0.0:e",
+    "protocol": "relmon@1.0.0/3",
     "net": "100.00",
-    "tax": "21.00",
     "gross": "121.00",
+    "tax": "21.00",
     "taxRate": "0.210",
     "unit": "EUR",
     "precision": 2,
-    "rounding": {"mode": "hup", "appliedTo": "tax"},
+    "scope": "c",
+    "rounding": {"mode": "hup", "application": "tax"},
     "components": [
         {
             "net": "50.00",
+            "gross": "60.50",
             "tax": "10.50",
             "taxRate": "0.210",
             "comment": "Base price of item 1"
         },
         {
             "net": "50.00",
+            "gross": "60.50",
             "tax": "10.50",
             "taxRate": "0.210",
             "comment": "Base price of item 2"
@@ -476,41 +478,43 @@ The example here includes the **extended** mode of RelMon object, including `com
 }
 ```
 
-Another example as core profile in **compact** mode.
+Another example (DL1) in **compact** mode.
 
 ```json
-{"p": "relmon@1.0.0:c", "n": "100.00", "t": "21.00", "g": "121.00"}
+{"p": "relmon@1.0.0/1:c", "n": "100.00", "tr": "21.00"}
 ```
 
 ### XML
 
-All modes of the protocol are supported.
+- All modes of the protocol are supported.
+- The root name of the element MAY be arbitrary (e.g. `<Money>`, `<Price>`, etc.).
 
-The root name of the element MAY be arbitrary (e.g. `<Money>`, `<Price>`, etc.).
-
-The example here includes the **extended** mode of RelMon object, excluding `components` fields.
+The example here includes the RelMon object in DL3, without `components` fields.
 
 ```xml
 <RelMon>
-    <protocol>relmon@1.0.0:e</protocol>
+    <protocol>relmon@1.0.0/3</protocol>
     <net>100.00</net>
-    <tax>21.00</tax>
     <gross>121.00</gross>
+    <tax>21.00</tax>
     <taxRate>0.210</taxRate>
     <unit>EUR</unit>
-    <precision maxDigits="5" scale="2"/>
-    <rounding>hup</rounding>
+    <precision>2</precision>
+    <rounding>
+        <mode>hup</mode>
+        <application>tax</application>
+    </rounding>
 </RelMon>
 ```
 
-Another example as core profile in **compact** and **minors** mode, passing optional `unit` field.
+Another example (DL3) in **compact** and **minors** mode, passing optional `unit` field.
 
 ```xml
 <RelMon>
-    <p>relmon@1.0.0:c.m</p>
+    <p>relmon@1.0.0/3:c.m</p>
     <n>10000</n>
-    <t>2100</t>
     <g>12100</g>
+    <t>2100</t>
     <u>EUR</u>
 </RelMon>
 ```
@@ -523,11 +527,11 @@ All modes are supported in all URI-based notations.
 
 The name of the field containing the URI-based notation of RelMon MAY be arbitrary.
 
-| Scheme              | Description                                                                                                                      | Example                                                                                                                     |
-|---------------------|----------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------| 
-| `relmon/json://...` | JSON representation (as base64) encoded in URI                                                                                   | `relmon/json://eyJwciI6InJlbG1vbkAxLjAuMDpjIiwibmV0IjoiMTAwLjAwIiwiZ3Jvc3MiOiIxMjEuMDAiLCJ0YXgiOiIyMS4wMCJ9`                |
-| `relmon/xml://...`  | XML representation (as base64) encoded in URI                                                                                    | `relmon/xml://PFJlbE1vbiBwcm90b2NvbD0icmVsbW9uQDEuMC4wOmMubSI+PG4+MTAwMDA8L24+PGc+MTIxMDA8L2c+PHQ+MjEwMDwvdD48L1JlbE1vbj4=` |
-| `relmon/min://...`  | Minimalistic textual representation with DL3 containing only the protocol identifier, net, gross and tax values separated by `;` | `relmon/min://1.0.0/3:m;10000;12100;2100`                                                                                   |
+| Scheme              | Description                                                                                                                      | Example                                                                                                                                                                 |
+|---------------------|----------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------| 
+| `relmon/json://...` | JSON representation (as base64) encoded in URI                                                                                   | `relmon/json://eyJwIjogInJlbG1vbkAxLjAuMC8xOmMiLCAibiI6ICIxMDAuMDAiLCAidHIiOiAiMjEuMDAifQ==`                                                                            |
+| `relmon/xml://...`  | XML representation (as base64) encoded in URI                                                                                    | `relmon/xml://PFJlbE1vbj4KICAgIDxwPnJlbG1vbkAxLjAuMC8zOmMubTwvcD4KICAgIDxuPjEwMDAwPC9uPgogICAgPGc+MTIxMDA8L2c+CiAgICA8dD4yMTAwPC90PgogICAgPHU+RVVSPC91Pgo8L1JlbE1vbj4=` |
+| `relmon/min://...`  | Minimalistic textual representation with DL3 containing only the protocol identifier, net, gross and tax values separated by `;` | `relmon/min://1.0.0/3:m;10000;12100;2100`                                                                                                                               |
 
 ## FAQ and design rationale
 
