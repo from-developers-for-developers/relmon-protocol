@@ -26,14 +26,14 @@
 
 This document specifies the **RelMon protocol** (Reliable Monetary Data Protocol, further referred as **RelMon**) and defines its **concrete default data format implementations**.
 
-RelMon is designed to enable reliable exchange of monetary data between systems. By standardizing the structure and semantics of monetary data, it ensures interoperable implementations across diverse systems, preserving **exact monetary values**, full precision, consistent rounding, and a **calculation-free approach** for net, tax, and gross amounts.
+RelMon ensures deterministic reconstruction of monetary components across systems. By standardizing the structure and semantics of monetary data, it ensures interoperable implementations across diverse systems, preserving **exact monetary values**, full precision, consistent rounding, and, following the maximum determinism level, a **derivable-free approach** for net, tax, and gross amounts.
 
 RelMon is programming language, storage, and data format agnostic, defining only the **abstract logical model** and **the concrete default data format implementations**.
 
-An example of using RelMon as JSON data format:
+An example of using RelMon as JSON data format (determinism level 3):
 
 ```json
-{"protocol": "relmon@1.0.0", "net": "100.00", "tax": "21.00", "gross": "121.00"}
+{"protocol": "relmon@1.0.0/3", "net": "100.00", "tax": "21.00", "gross": "121.00"}
 ```
 
 ## Key words
@@ -77,7 +77,7 @@ For the full license text, see [this file](LICENSE).
 
 ## Abstract logical model
 
-### Notation
+### The notation
 
 The specification uses an **informal abstract data model notation** to describe the logical structure of RelMon monetary values.
 
@@ -91,101 +91,245 @@ Concrete default data format implementations of the protocol are defined separat
 
 **Legend**
 
-- `?` indicates an optional field  
-- `[]` indicates an ordered list  
-- Capitalized identifiers denote abstract types  
+- `?` indicates an optional field
+- `:` indicates a type (`object`, `list`, `decimal`, `integer`, `text`)
+- `=` indicates a value
+- `|` - a separator for possible scalar values
+- `[?` indicates the optional part
+- `...` indicates that the construction can be repeated multiple times
+- `[]` indicates an ordered list
+- `,` - a separator for elements in the ordered list
+- `xxx:` (string followed by `:` symbol) indicates the meaning of the element in the ordered list
+- Capitalized identifiers denote abstract types
 
----
+### The model
 
 ```
-RelMonObject :=
+RelMonObject: object =
 {
     protocol: ProtocolIdentifier
-    net: Decimal | Integer
-    tax: Decimal | Integer
-    gross: Decimal | Integer
 
-    taxRate?: Decimal(6, 3)
-    unit?: Text
-    precision?: DecimalPrecision
-    rounding?: RoundingMode
+    net?: decimal | integer
+    gross?: decimal | integer
+    tax?: decimal | integer
+    taxRate?: decimal(6, 3)
+
+    unit?: text
+    precision?: integer
+    scope?: CalculationScope
+    rounding?: Rounding
     components?: MonetaryComponent[]
 }
 
-ProtocolIdentifier := "relmon@MAJOR.MINOR.PATCH[:mode1[.mode2[.mode3...]]]"
-DecimalPrecision := [maxDigits: Integer, scale: Integer]
-RoundingMode := "hup" | "hdown" | "heven" | "up" | "down"
-MonetaryComponent :=
+ProtocolIdentifier: text = "relmon@MAJOR.MINOR.PATCH/DeterminismLevel[?:MODE[?.MODE...]]"
+MAJOR: integer
+MINOR: integer
+PATCH: integer
+MODE?: text
+DeterminismLevel: integer = 1 | 2 | 3
+
+CalculationScope: text = "r" | "a"
+
+Rounding: list = [
+    mode: text = "hup" | "hdown" | "heven" | "up" | "down",
+    appliedTo: text = "tax" | "total"
+]
+
+MonetaryComponent: object =
 {
-    net: Decimal | Integer
-    tax: Decimal | Integer
-    taxRate?: Decimal(6, 3)
-    comment?: Text
+    net?: decimal | integer
+    gross?: decimal | integer
+    tax?: decimal | integer
+    taxRate?: decimal(6, 3)
+    comment?: text
 }
 ```
 
-### Specification clarification
+## Protocol specification
+
+### Format agnostic
+
+The abstract model does not prescribe JSON, XML, URI, or binary layouts. 
+Concrete data format implementations map abstract fields to specific formats, as defined in separate sections.
+
+### Protocol identifier
 
 - **Protocol version**: `protocol` MUST follow the defined `ProtocolIdentifier` format and reflect the SemVer version of the abstract model.
-- **Protocol modes**: `protocol` MAY define its modes affecting the format and the fields of the protocol. Available modes are: `e` (extended), `c` (compact), `m` (minors).
-- **Monetary values**: `net`, `tax`, and `gross` are exact and MUST preserve full precision. 
-    - Implementations MUST NOT perform floating-point arithmetic. 
-    - These fields MUST be represented as decimals unless the `m` mode is used.
-- **Tax rate**: the `taxRate` on the root level of `RelMonObject` MAY be present if the tax rate is the same across all components.
-- **Consistency rules**: `gross = net + tax`.
-- **Units**: When the unit represents a fiat currency, implementations SHOULD use the corresponding ISO 4217 currency code in the `unit` field. Examples: `EUR`, `USD`, `RUB`.
-- **Precision**: The optional `precision` field defines `[maxDigits, scale]`, where `maxDigits` defines the total amount of digits in the value, and `scale` the amount of digits after the point. All decimal values in the fields `net`, `tax`, and `gross` MUST comply if present.
-    - In case of using the mode `m`, the implementor MAY use the `precision` field to properly format monetary values in the representational layer.
-- **Rounding**: The optional `rounding` field specifies the method to apply in cases of arithmetic operations.
-    - The `rounding` field MUST be present if `precision` is set AND rounding has been applied.
-    - The `rounding` field MUST NOT be present if `m` mode is used.
-- **Optional metadata**: `comment` in `MonetaryComponent` is purely informational and MUST NOT affect numeric calculations. This field is ALWAYS optional.
-- **Format agnostic**: The abstract model does not prescribe JSON, XML, URI, or binary layouts. Concrete data format implementations map abstract fields to specific formats, as defined in separate sections.
+- **Protocol determinism level**: protocol identifier MUST include the determinism level of the protocol. 
+- **Protocol modes**: `protocol` MAY define its modes affecting the format and the fields of the protocol. Available modes are: `c` (compact), `m` (minors).
 
-### Protocol modes
+#### Protocol modes
 
-RelMon defines 3 modes that modify the format and the set of the fields of the protocol. The modes MUST NOT change the logical model of the protocol. The order of mode declaration MUST NOT affect the RelMon logical model.
+RelMon defines two modes that modify the format and the set of the fields of the protocol. 
+The modes MUST NOT change the logical model of the protocol. 
+The order of mode declaration MUST NOT affect the RelMon logical model.
 
-- **Extended**: Extended mode (`e`) indicates that `RelMonObject` MUST contain **all** fields defined in the abstract model, including those normally optional. The **only exception** is the `components` field, which MAY be omitted or be empty.
 - **Compact**: Compact mode (`c`) defines that the names of the fields of the `RelMonObject` are written in the compact mode. Compact mode affects field identifiers only and MUST NOT alter semantic meaning or numeric behavior. This mode MUST be identified as `c`.
-    - `protocol` is represented via `p`
-    - `net` is represented via `n`
-    - `tax` is represented via `t`
-    - `gross` is represented via `g`
-    - `taxRate` is represented via `tr`
-    - `unit` is represented via `u`
-    - `precision` is represented via `pr`
-    - `rounding` is represented via `r`
-    - `components` is represented via `cs`
-- **Minors**: Minors mode (`m`) defines that the fields `net`, `tax` and `gross` of `RelMonObject` are the smallest units of the currency or asset and MUST be represented as integers. This mode MUST be identified as `m`.
+  - `protocol` is represented via `p`
+  - `net` is represented via `n`
+  - `tax` is represented via `t`
+  - `gross` is represented via `g`
+  - `taxRate` is represented via `tr`
+  - `unit` is represented via `u`
+  - `precision` is represented via `pr`
+  - `scope` is represented via `s`
+  - `rounding` is represented via `r`
+  - `components` is represented via `cs`
+- **Minors**: Minors mode (`m`) defines that the fields `net`, `gross` and `tax` of `RelMonObject` are the smallest units of the currency or asset and MUST be represented as integers. This mode MUST be identified as `m`.
 
-An example: `relmon@1.0.0:e.c.m`.
+An example: `relmon@1.0.0/3:c.m`.
 
-### Rounding modes
+### Monetary values
+
+- Fields `net`, `gross`, `tax` are exact and MUST preserve full precision.
+- They MUST be represented as decimals unless the `m` mode (minors) is used.
+
+### Monetary bases
+
+`RelMonObject` MUST contain one of the following valid monetary bases:
+
+- Basis 1 - **Rate-based derivation**: `net AND taxRate` or `gross AND taxRate`
+- Basis 2 - **Tax-amount provided**: `net AND tax` or `gross AND tax`
+- Basis 3 - **Fully materialized**: `net AND tax AND gross`
+
+### Calculation scope
+
+One of the following calculation scopes MUST be used:
+
+- `c` - calculation scope is **component-based**, meaning that all derivations are performed on a per-component basis;
+  - including `components` field is REQUIRED in this case.
+- `r` - calculation scope is **root-based**, meaning that all derivations are performed on the root-level `net` or `gross` field.
+
+Regardless of the calculation scope, the root-level `net`, `gross` and `tax` values MUST be respectively equal to the sum of all per-component `net`, `gross` and `tax` fields.
+
+An example:
+
+```
+net = 100.00
+gross = 121.00
+tax = 21.00
+components = [
+    { net: 50.00, gross: 60.50, tax: 10.50 },
+    { net: 50.00, gross: 60.50, tax: 10.50 }
+]
+```
+
+Summing up `net`, `gross` and `tax` values of each component would result in the root-level `net`, `gross` and `tax` values.
+
+Implementations MUST implement the **default** calculation scope `r`, unless:
+
+- an explicit calculation scope is specified;
+- or a mutual agreement for the default value is set among involved systems.
+
+### Arithmetics
+
+- Implementations MUST NOT perform floating-point arithmetic.
+- Implementations MUST produce results identical to exact decimal arithmetic under the declared:
+  - precision;
+  - rounding mode;
+  - calculation scope.
+- Allowed arithmetic strategies include:
+  - decimal arithmetic; 
+  - integer minor-unit arithmetic; 
+  - fixed-scale decimals.
+- Binary floating-point arithmetic MUST NOT be used unless it guarantees identical results.
+
+#### Precision
+
+Precision defines the scale at which rounding occurs.
+
+An example `precision = 2` means rounding to two decimal places: `10.336 --> 10.34`.
+
+#### Rounding modes
 
 RelMon supports the following rounding modes:
 
-- `hup` value stands for "half-up" and acts as rounding away from zero. Examples: 
-    - `1.5 => 2`
-    - `2.5 => 3`
-    - `-1.5 => -2`
-- `hdown` value stands for "half-down" and acts as rounding towards zero. Examples: 
-    - `1.5 => 1`
-    - `2.5 => 2`
-    - `-1.5 => -1`
-- `heven` value stands for "half-even" and acts as rounding to the nearest even digit. Examples: 
-    - `1.5 => 2`
-    - `2.5 => 2`
-    - `3.5 => 4`
-    - `4.5 => 4`
-    - `-1.5 => -2`
-    - `-2.5 => -2`
-- `up` value stands for "up" and acts as rounding away from zero, discarding any fractional part. Examples: 
-    - `1.1 => 2`
-    - `-1.1 => -2`
-- `down` value stands for "down" and acts as rounding towards zero, discarding any fractional part. Examples: 
-    - `1.9 => 1`
-    - `-1.9 => -1`.
+- `hup` value stands for "half-up" and acts as rounding away from zero. Examples:
+  - `1.5 => 2`
+  - `2.5 => 3`
+  - `-1.5 => -2`
+- `hdown` value stands for "half-down" and acts as rounding towards zero. Examples:
+  - `1.5 => 1`
+  - `2.5 => 2`
+  - `-1.5 => -1`
+- `heven` value stands for "half-even" and acts as rounding to the nearest even digit. Examples:
+  - `1.5 => 2`
+  - `2.5 => 2`
+  - `3.5 => 4`
+  - `4.5 => 4`
+  - `-1.5 => -2`
+  - `-2.5 => -2`
+- `up` value stands for "up" and acts as rounding away from zero, discarding any fractional part. Examples:
+  - `1.1 => 2`
+  - `-1.1 => -2`
+- `down` value stands for "down" and acts as rounding towards zero, discarding any fractional part. Examples:
+  - `1.9 => 1`
+  - `-1.9 => -1`.
+
+Implementations MUST implement the **default** rounding mode `heven`, unless:
+
+- an explicit rounding mode is specified;
+- or a mutual agreement for the default value is set among involved systems.
+
+#### Rounding application
+
+The rounding may be applicable to:
+
+- `tax` - the rounding function is applied to `tax` after the derivation;
+- `total` - the rounding function is applied to `gross` or `net` after the derivation.
+
+Implementations MUST implement the **default** rounding application `tax`, unless:
+
+- an explicit rounding application is specified;
+- or a mutual agreement for the default value is set among involved systems.
+
+#### Rounding function
+
+RelMon defines a deterministic rounding function: `round(value, precision, roundingMode = "heven", roundingApplication = "tax")`. Where:
+
+- `value` is a decimal number to be rounded.
+- `precision` defines the number of decimal places after the decimal point.
+- `roundingMode` defines how ties and directional rounding are handled (default value `heven`).
+- `roundingApplication` defines how exactly the rounding is applied (default value `tax`).
+
+The function returns a decimal number rounded to the specified precision.
+
+Rounding MUST be applied in accordance with `roundingApplication`.
+
+- If `roundingApplication = "tax"`, the derivation sequence is:
+  - If `net` is provided:
+    ```
+    tax = round(net * (taxRate / 100))
+    gross = net + tax
+    ```
+  - If `gross` is provided:
+    ```
+    net = gross / (taxRate / 100 + 1)
+    tax = round(gross - net)
+    ```
+- If `roundingApplication = "total"`, the derivation sequence is:
+  - If `net` is provided:
+    ```
+    gross = round(net * (taxRate / 100 + 1))
+    tax = gross - net
+    ```
+  - If `gross` is provided:
+    ```
+    net = round(gross / (taxRate / 100 + 1))
+    tax = gross - net
+    ```
+
+### Units
+
+When the unit represents a fiat currency, it is RECOMMENDED for implementations to use the corresponding ISO 4217 currency code in the `unit` field. Examples: `EUR`, `USD`, `RUB`.
+
+### Tax rate on the root level
+
+The `taxRate` on the root level of `RelMonObject` MAY be present if the tax rate is the same across all components.
+
+### Optional metadata
+
+Fields `comment` in `MonetaryComponent` is purely informational and MUST NOT affect numeric calculations. This field is ALWAYS optional.
 
 ### Validation rules
 
@@ -193,64 +337,75 @@ RelMon defines the following rules for validating monetary values:
 
 - **Consistency**
     - `gross = net + tax`
-    - If `components` are present, the sum of all component `net` values MUST equal the parent `net`, and the sum of all component `tax` values MUST equal the parent `tax`.
+    - `net = gross - tax`
+    - If `components` are present:
+      - the sum of all component `net` values MUST equal the root-level `net`; 
+      - the sum of all component `tax` values MUST equal the root-level `tax`;
+      - the sum of all component `gross` values MUST equal the root-level `gross`.
 - **Data types**
     - `net`, `tax`, and `gross` MUST be decimals unless **Minors mode** (`m`) is active, in which case they MUST be integers.
 - **Precision**
-    - If `precision` is specified, all decimal values in `net`, `tax`, and `gross` MUST comply with `[maxDigits, scale]`.
-- **Rounding**
-    - If rounding has been applied, the `rounding` field MUST be present and its value MUST be one of the allowed rounding modes.
-    - If no rounding has occurred, the `rounding` field MAY be omitted.
-    - Allowed values: `hup`, `hdown`, `heven`, `up`, `down`.
+    - If `precision` is specified, all decimal values in `net`, `tax`, and `gross` MUST comply with the provided precision value.
 - **Optional fields**
-    - Any optional fields, such as `unit` or `taxRate`, if present, MUST conform to their abstract type definitions.
+    - Any optional fields, if present, MUST conform to their abstract type definitions.
 - **Components**
-    - Each `MonetaryComponent` MUST include `net` and `tax`.
+    - Each `MonetaryComponent` MUST respect the monetary bases.
     - The optional `taxRate` in a component MUST comply with the format defined in the abstract model.
     - The optional `comment` in a component MUST NOT affect numeric calculations.
-    
+
 ### Signed values semantics
 
 Monetary values in RelMon may be negative. Implementations MUST handle negative values as follows:
 
-- Fields `net`, `tax` and `gross` MAY be negative (prefixed with `-` symbol) for both decimals or minors.
+- Fields `net`, `gross` and `tax` MAY be negative (prefixed with `-` symbol) for both decimals or minors.
 - Positive values MUST NOT have any prefix (no `+` prefix).
-- All root-level fields (`net`, `tax` and `gross`) MUST have the same sign.
+- All root-level fields (`net`, `gross` and `tax`) MUST have the same sign.
 - Components MAY independently be positive or negative, but each component's `net` and `tax` MUST share the same sign.
 - Rounding modes specified in the `rounding` field apply symmetrically to negative values.
 
 Implementations MUST ensure that arithmetic consistency rules (`gross = net + tax` and component sums) remain valid even when values are negative.
 
-### Conformance profiles
+### Determinism levels
 
-RelMon defines conformance profiles to help implementers achieve predictable interoperability:
+RelMon defines several determinism levels. A determinism level defines how many monetary values must be derived from other fields.
 
-- **Core Profile**
-    - Includes all **required fields**: `protocol`, `net`, `tax`, `gross`.
-    - Optional fields (`taxRate`, `unit`, `precision`, `rounding`, `components`, `comment`) MAY be omitted.
-    - Ensures basic interoperability across systems.
-- **Extended Profile**
-    - Includes **all fields of the abstract model**, including optional ones (except `components`, which MAY be empty or omitted).
-    - Provides **full precision**, **reconstructibility**, and **semantic clarity**.
-- **Compact Profile**
-    - Mirrors the **Core** or **Extended** profile, but uses **compact field names** as defined in Compact mode (`c`).
+Each level specifies a set of fields that determines how much arithmetic is required to derive missing values. 
+Lower levels require more calculations, while higher levels require fewer, with the highest level requiring no derivation at all.
 
-Implementers MAY declare which profile their system conforms to, ensuring that exchanging systems can verify compatibility and expectations before transfer.
+Determinism level further will be referred to as "DL".
+
+| Determinism level | Description                                                                                                                                                                                                                                                                                                          | Fields required                                  | Requirements                                                                                                                         |
+|-------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------|
+| DL1               | Minimum fields allowing full reconstruction.<br/>Only `net` or `gross` value is sent.<br/>The missing amount must be derived.                                                                                                                                                                                        | - `net AND taxRate`<br/>- or `gross AND taxRate` | - rounding mode MUST be defined<br/>- calculation scope MUST be defined (root/component)<br/>- deterministic reconstruction required |
+| DL2               | Derived values partially materialized to ensure consistency.<br/>A derived value is included even though it can be recomputed.<br/><br/>Purpose:<br/><br/>- validation across systems<br/>- detect drift or calculation differences<br/>- improves interoperability<br/>- `gross` and `net` are authoritative values | `net AND taxRate AND gross`                      | - Materialized values MUST match recomputed values<br/>- If `tax` amount is necessary, it must be derived                            |
+| DL3               | All monetary values explicitly provided.<br/>No reconstruction needed.                                                                                                                                                                                                                                               | `net AND gross AND tax`                          | `gross = net + tax` and `net = gross - tax`                                                                                          |
 
 ### Summary table of the model fields
 
-| Field | Compact notation | Type | Optional | Description |
-| ------ | ------------------------ | ------- | ----------- | --------------- |
-| protocol | p | ProtocolIdentifier | Required | The protocol version and modes |
-| net | n | Decimal \| Integer | Required | Total net amount |
-| tax | t | Decimal \| Integer | Required | Total tax amount |
-| gross | g | Decimal \| Integer | Required | Total gross amount |
-| taxRate | tr | Decimal | Always optional | The tax rate if it is the same for all components |
-| unit | u | Text | Optional, unless **extended** mode is used | Unit code (e.g. ISO4217) |
-| precision | pr | DecimalPrecision | Optional, unless **extended** mode is used | Decimal value precision |
-| rounding | r | Text | Optional, unless **extended** mode is used or actual rounding is applied | Rounding mode applied |
-| components | cs | MonetaryComponent[] | Always optional | List of components with their own `net` `tax` and `taxRate` values |
-| comment | c | Text | Always optional | Optional arbitrary comment for a component |
+**Root-level fields**
+
+| Field      | Compact notation | Type                | Possible values                                                                        | Default value      | DL1                                   | DL2                                   | DL3                                   | Description                                               |
+|------------|------------------|---------------------|----------------------------------------------------------------------------------------|--------------------|---------------------------------------|---------------------------------------|---------------------------------------|-----------------------------------------------------------|
+| protocol   | p                | ProtocolIdentifier  | N/A                                                                                    | N/A                | Required                              | Required                              | Required                              | The protocol version, determinism level and modes         |
+| net        | n                | decimal \| integer  | N/A                                                                                    | N/A                | Derived from `gross`.                 | Required                              | Optional (if `gross` provided)        | Total net amount                                          |
+| gross      | g                | decimal \| integer  | N/A                                                                                    | N/A                | Derived from `net`                    | Required                              | Optional (if `net` provided)          | Total gross amount                                        |
+| tax        | t                | decimal \| integer  | N/A                                                                                    | N/A                | Optional                              | Optional                              | Required                              | Total tax amount                                          |
+| taxRate    | tr               | decimal(6,3)        | N/A                                                                                    | N/A                | Required                              | Required                              | Optional                              | Tax rate if it is the same for all components             |
+| unit       | u                | text                | N/A                                                                                    | N/A                | Optional                              | Optional                              | Optional                              | Unit code (e.g. ISO4217)                                  |
+| precision  | pr               | integer             | N/A                                                                                    | N/A                | Required                              | Required                              | Optional                              | Decimal value precision                                   |
+| scope      | s                | text                | `c`, `r`                                                                               | `r`                | Optional                              | Optional                              | Optional                              | Calculation scope                                         |
+| rounding   | r                | text                | `[mode: "hup" \| "hdown" \| "heven" \| "up" \| "down", application: "tax" \| "total"]` | `["heven", "tax"]` | Required                              | Required                              | Optional                              | Rounding mode                                             |
+| components | cs               | MonetaryComponent[] | N/A                                                                                    | N/A                | Optional (if calculation scope = `r`) | Optional (if calculation scope = `r`) | Optional (if calculation scope = `r`) | List of components (necessary if calculation scope = `c`) |
+
+**Component-level fields**
+
+| Field   | Compact notation | Type               | Possible values | Default value | DL1                   | DL2      | DL3                            | Description                                |
+|---------|------------------|--------------------|-----------------|---------------|-----------------------|----------|--------------------------------|--------------------------------------------|
+| net     | n                | decimal \| integer | N/A             | N/A           | Derived from `gross`. | Required | Optional (if `gross` provided) | Net amount                                 |
+| gross   | g                | decimal \| integer | N/A             | N/A           | Derived from `net`    | Required | Optional (if `net` provided)   | Gross amount                               |
+| tax     | t                | decimal \| integer | N/A             | N/A           | Optional              | Optional | Required                       | Tax amount                                 |
+| taxRate | tr               | decimal(6,3)       | N/A             | N/A           | Required              | Required | Optional                       | Tax rate                                   |
+| comment | c                | text               | N/A             | N/A           | No                    | No       | No                             | Optional arbitrary comment for a component |
 
 ## Concrete default data format implementations
 
