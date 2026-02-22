@@ -45,6 +45,7 @@
     * [Why allow negative values?](#why-allow-negative-values)
     * [Why is the protocol language, storage, and data format agnostic?](#why-is-the-protocol-language-storage-and-data-format-agnostic)
   * [Changelog](#changelog)
+  * [TODOs](#todos)
 
 ## Introduction
 
@@ -604,6 +605,14 @@ To allow **maximum interoperability**. The abstract model defines **semantic mea
 
 ## Changelog
 
-| Date | Version | Description |
-| ------ | ---------- | --------------- |
-| 2026-01-17 | 1.0.0 | First version of the protocol published |
+| Date       | Version | Description                                   |
+|------------|---------|-----------------------------------------------|
+| 2026-01-17 | 1.0.0   | First draft version of the protocol published |
+| 2026-02-23 | 1.0.0   | Reworked the draft version of the protocol    |
+
+## TODOs
+
+- Add OpenAPI schema for JSON format.
+- Add XSD for XML format.
+- Add possible validation/error codes.
+- Add a conformance test suite.
