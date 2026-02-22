@@ -2,25 +2,49 @@
 
 ## Table of contents
 
-1. [Introduction](#Introduction)
-2. [Key words](#key-words)
-3. [Versioning](#versioning)
-4. [License](#license)
-5. [Abstract logical model](#abstract-logical-model)
-    1. [Notation](#notation)
-    2. [Specification clarification](#specification-clarification)
-    3. [Protocol modes](#protocol-modes)
-    4. [Rounding modes](#rounding-modes)
-    5. [Validation rules](#validation-rules)
-    6. [Signed values semantics](#signed-values-semantics)
-    7. [Conformance profiles](#conformance-profiles)
-    8. [Summary table of the model fields](#summary-table-of-the-model-fields)
-6. [Concrete default data format implementations](#concrete-default-data-format-implementations)
-    1. [JSON](#json)
-    2. [XML](#xml)
-    3. [URI-based notations](#uri-based-notations)
-7. [FAQ and design rationale](#faq-and-design-rationale)
-8. [Changelog](#changelog)
+* [Reliable Monetary data protocol (RelMon protocol)](#reliable-monetary-data-protocol-relmon-protocol)
+  * [Table of contents](#table-of-contents)
+  * [Introduction](#introduction)
+  * [Key words](#key-words)
+  * [Versioning](#versioning-)
+  * [License](#license)
+  * [Abstract logical model](#abstract-logical-model)
+    * [Notation](#notation)
+    * [The model](#the-model)
+  * [Protocol specification](#protocol-specification)
+    * [Format agnostic](#format-agnostic)
+    * [Protocol identifier](#protocol-identifier)
+      * [Protocol modes](#protocol-modes)
+    * [Monetary values](#monetary-values)
+    * [Monetary bases](#monetary-bases)
+    * [Calculation scope](#calculation-scope)
+    * [Arithmetics](#arithmetics)
+      * [Precision](#precision)
+      * [Rounding modes](#rounding-modes)
+      * [Rounding application](#rounding-application)
+      * [Rounding function](#rounding-function)
+    * [Units](#units)
+    * [Tax rate on the root level](#tax-rate-on-the-root-level)
+    * [Optional metadata](#optional-metadata)
+    * [Signed values semantics](#signed-values-semantics)
+    * [Validation rules](#validation-rules)
+    * [Determinism levels](#determinism-levels)
+    * [Summary table of the model fields](#summary-table-of-the-model-fields)
+  * [Concrete default data format implementations](#concrete-default-data-format-implementations)
+    * [JSON](#json)
+    * [XML](#xml)
+    * [URI-based notations](#uri-based-notations)
+  * [FAQ and design rationale](#faq-and-design-rationale)
+    * [**Why different determinism levels?**](#why-different-determinism-levels)
+    * [Why is `taxRate` a decimal(6,3)?](#why-is-taxrate-a-decimal63)
+    * [Why provide a `precision` field?](#why-provide-a-precision-field)
+    * [Why include a rounding mode and application field?](#why-include-a-rounding-mode-and-application-field)
+    * [Why is the default rounding mode - "heven", and the default rounding application - "tax"?](#why-is-the-default-rounding-mode---heven-and-the-default-rounding-application---tax)
+    * [Why have Compact and Minors modes?](#why-have-compact-and-minors-modes)
+    * [Can RelMon handle cryptocurrencies like BTC or ETH?](#can-relmon-handle-cryptocurrencies-like-btc-or-eth)
+    * [Why allow negative values?](#why-allow-negative-values)
+    * [Why is the protocol language, storage, and data format agnostic?](#why-is-the-protocol-language-storage-and-data-format-agnostic)
+  * [Changelog](#changelog)
 
 ## Introduction
 
@@ -77,7 +101,7 @@ For the full license text, see [this file](LICENSE).
 
 ## Abstract logical model
 
-### The notation
+### Notation
 
 The specification uses an **informal abstract data model notation** to describe the logical structure of RelMon monetary values.
 
@@ -130,10 +154,10 @@ DeterminismLevel: integer = 1 | 2 | 3
 
 CalculationScope: text = "r" | "a"
 
-Rounding: list = [
-    mode: text = "hup" | "hdown" | "heven" | "up" | "down",
-    appliedTo: text = "tax" | "total"
-]
+Rounding: object = {
+    mode?: text = "hup" | "hdown" | "heven" | "up" | "down",
+    appliedTo?: text = "tax" | "total"
+}
 
 MonetaryComponent: object =
 {
@@ -331,6 +355,18 @@ The `taxRate` on the root level of `RelMonObject` MAY be present if the tax rate
 
 Fields `comment` in `MonetaryComponent` is purely informational and MUST NOT affect numeric calculations. This field is ALWAYS optional.
 
+### Signed values semantics
+
+Monetary values in RelMon may be negative. Implementations MUST handle negative values as follows:
+
+- Fields `net`, `gross` and `tax` MAY be negative (prefixed with `-` symbol) for both decimals or minors.
+- Positive values MUST NOT have any prefix (no `+` prefix).
+- All root-level fields (`net`, `gross` and `tax`) MUST have the same sign.
+- Components MAY independently be positive or negative, but each component's `net` and `tax` MUST share the same sign.
+- Rounding modes specified in the `rounding` field apply symmetrically to negative values.
+
+Implementations MUST ensure that arithmetic consistency rules (`gross = net + tax` and component sums) remain valid even when values are negative.
+
 ### Validation rules
 
 RelMon defines the following rules for validating monetary values:
@@ -353,18 +389,6 @@ RelMon defines the following rules for validating monetary values:
     - The optional `taxRate` in a component MUST comply with the format defined in the abstract model.
     - The optional `comment` in a component MUST NOT affect numeric calculations.
 
-### Signed values semantics
-
-Monetary values in RelMon may be negative. Implementations MUST handle negative values as follows:
-
-- Fields `net`, `gross` and `tax` MAY be negative (prefixed with `-` symbol) for both decimals or minors.
-- Positive values MUST NOT have any prefix (no `+` prefix).
-- All root-level fields (`net`, `gross` and `tax`) MUST have the same sign.
-- Components MAY independently be positive or negative, but each component's `net` and `tax` MUST share the same sign.
-- Rounding modes specified in the `rounding` field apply symmetrically to negative values.
-
-Implementations MUST ensure that arithmetic consistency rules (`gross = net + tax` and component sums) remain valid even when values are negative.
-
 ### Determinism levels
 
 RelMon defines several determinism levels. A determinism level defines how many monetary values must be derived from other fields.
@@ -374,11 +398,11 @@ Lower levels require more calculations, while higher levels require fewer, with 
 
 Determinism level further will be referred to as "DL".
 
-| Determinism level | Description                                                                                                                                                                                                                                                                                                          | Fields required                                  | Requirements                                                                                                                         |
-|-------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------|
-| DL1               | Minimum fields allowing full reconstruction.<br/>Only `net` or `gross` value is sent.<br/>The missing amount must be derived.                                                                                                                                                                                        | - `net AND taxRate`<br/>- or `gross AND taxRate` | - rounding mode MUST be defined<br/>- calculation scope MUST be defined (root/component)<br/>- deterministic reconstruction required |
-| DL2               | Derived values partially materialized to ensure consistency.<br/>A derived value is included even though it can be recomputed.<br/><br/>Purpose:<br/><br/>- validation across systems<br/>- detect drift or calculation differences<br/>- improves interoperability<br/>- `gross` and `net` are authoritative values | `net AND taxRate AND gross`                      | - Materialized values MUST match recomputed values<br/>- If `tax` amount is necessary, it must be derived                            |
-| DL3               | All monetary values explicitly provided.<br/>No reconstruction needed.                                                                                                                                                                                                                                               | `net AND gross AND tax`                          | `gross = net + tax` and `net = gross - tax`                                                                                          |
+| Determinism level | Description                                                                                                                                                                                                                                                                                                          | Fields required                                  | Requirements                                                                                                                                         |
+|-------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------|
+| DL1               | Minimum fields allowing full reconstruction.<br/>Only `net` or `gross` value is sent.<br/>The missing amount must be derived.                                                                                                                                                                                        | - `net AND taxRate`<br/>- or `gross AND taxRate` | - rounding mode MUST be defined<br/>- calculation scope MUST be defined (root/component)<br/>- deterministic reconstruction required                 |
+| DL2               | Derived values partially materialized to ensure consistency.<br/>A derived value is included even though it can be recomputed.<br/><br/>Purpose:<br/><br/>- validation across systems<br/>- detect drift or calculation differences<br/>- improves interoperability<br/>- `gross` and `net` are authoritative values | `net AND taxRate AND gross`                      | - Materialized values MUST match recomputed values<br/>- Rounding application to `tax` is optional in DL2 only if all derivable amounts are included |
+| DL3               | All monetary values explicitly provided.<br/>No reconstruction needed.                                                                                                                                                                                                                                               | `net AND gross AND tax`                          | `gross = net + tax` and `net = gross - tax`                                                                                                          |
 
 ### Summary table of the model fields
 
@@ -411,7 +435,7 @@ Determinism level further will be referred to as "DL".
 
 RelMon defines multiple **concrete default data format implementations** to represent the abstract monetary model. This section provides a high-level overview and references for each format.
 
-Default format implementation as of this version of the protocol are: JSON, XML, and multiple URI-based notations - JSON, XML, minimalistic notation and [Protocol Buffers](https://protobuf.dev/) notation.
+Default format implementation as of this version of the protocol are: JSON, XML, and multiple URI-based notations - JSON, XML, minimalistic DL3 textual representation.
 
 RelMon is open to be implemented in any other data format.
 
@@ -433,8 +457,8 @@ The example here includes the **extended** mode of RelMon object, including `com
     "gross": "121.00",
     "taxRate": "0.210",
     "unit": "EUR",
-    "precision": [5, 2],
-    "rounding": "hup",
+    "precision": 2,
+    "rounding": {"mode": "hup", "appliedTo": "tax"},
     "components": [
         {
             "net": "50.00",
@@ -499,20 +523,25 @@ All modes are supported in all URI-based notations.
 
 The name of the field containing the URI-based notation of RelMon MAY be arbitrary.
 
-| Scheme | Description | Example |
-| -------- | ------- |  ------- | 
-| `relmon/json://...` | JSON representation (as base64) encoded in URI | `relmon/json://eyJwciI6InJlbG1vbkAxLjAuMDpjIiwibmV0IjoiMTAwLjAwIiwiZ3Jvc3MiOiIxMjEuMDAiLCJ0YXgiOiIyMS4wMCJ9` |
-| `relmon/xml://...` | XML representation (as base64) encoded in URI | `relmon/xml://PFJlbE1vbiBwcm90b2NvbD0icmVsbW9uQDEuMC4wOmMubSI+PG4+MTAwMDA8L24+PGc+MTIxMDA8L2c+PHQ+MjEwMDwvdD48L1JlbE1vbj4=` |
-| `relmon/min://...` | Minimalistic textual representation containing only the protocol version, net, gross and tax values separated by `;` | `relmon/min://1.0.0:m;10000;12100;2100` |
-| `relmon/protobuf://...` | Protobuf repsentation (as base64) encoded in URI | `TODO` |
+| Scheme              | Description                                                                                                                      | Example                                                                                                                     |
+|---------------------|----------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------| 
+| `relmon/json://...` | JSON representation (as base64) encoded in URI                                                                                   | `relmon/json://eyJwciI6InJlbG1vbkAxLjAuMDpjIiwibmV0IjoiMTAwLjAwIiwiZ3Jvc3MiOiIxMjEuMDAiLCJ0YXgiOiIyMS4wMCJ9`                |
+| `relmon/xml://...`  | XML representation (as base64) encoded in URI                                                                                    | `relmon/xml://PFJlbE1vbiBwcm90b2NvbD0icmVsbW9uQDEuMC4wOmMubSI+PG4+MTAwMDA8L24+PGc+MTIxMDA8L2c+PHQ+MjEwMDwvdD48L1JlbE1vbj4=` |
+| `relmon/min://...`  | Minimalistic textual representation with DL3 containing only the protocol identifier, net, gross and tax values separated by `;` | `relmon/min://1.0.0/3:m;10000;12100;2100`                                                                                   |
 
 ## FAQ and design rationale
 
 This section is **informative only** and does not contain requirements. It explains key design decisions of RelMon to help implementers understand its rationale.
 
-### **Why separate `net`, `tax`, and `gross`?**
+### **Why different determinism levels?**
 
-To make the protocol *calculation-free*. Systems do not need to compute `tax` or `gross` from `net`; each value is explicitly specified. This eliminates differences caused by rounding or arithmetic in heterogeneous systems.
+Determinism levels (DL1–DL3) exist to define how much arithmetic is required by consuming systems to reconstruct monetary values. They allow systems to adapt their implementations depending on what the data provider can or wants to supply:
+
+- **DL1** (derivable): Only minimal values are provided (net or gross + taxRate). Receiving systems must compute the missing components. This level is flexible but places more responsibility on receivers for accurate rounding and derivation.
+- **DL2** (partially materialized): Some values are included even if derivable (net + taxRate + gross), which helps reduce derivation effort and allows systems to validate calculations against the sender's values.
+- **DL3** (fully materialized / derivation-free): All monetary components (net, tax, gross) are explicitly provided. Receiving systems do not need to perform arithmetic and can rely directly on the values, minimizing risk of rounding or calculation errors.
+
+Determinism levels define a contract between data providers and consumers, clarifying what calculations are expected and what is guaranteed, while still maintaining full precision and consistent rounding.
 
 ### Why is `taxRate` a decimal(6,3)?
 
@@ -522,15 +551,34 @@ To support tax rates with **fractional precision**, e.g., 12.35% or 0.625%. The 
 
 Precision defines the **maximum total digits and fractional scale** for monetary values. This ensures that values are consistently formatted and interpreted across systems. It is optional, but required for extended mode.
 
-### Why include a `rounding` field?
+### Why include a rounding mode and application field?
 
-Rounding modes specify how **intermediate or formatted values** are handled when reduction of scale occurs. Specifying the mode ensures consistent rounding behavior across implementations.
+Rounding rules are critical for deterministic monetary calculations. Even with the same net, tax, and gross values, different rounding methods can produce mismatched results across systems.
 
-Included rounding modes are all **finance-relevant**: `half-up`, `half-down`, `half-even`, `up`, `down`.
+- Rounding mode specifies how rounding is performed (half-up, half-down, half-even, up, down).
+- Rounding application defines where rounding is applied during derivation:
+  - `tax`: round the tax first, then calculate gross.
+  - `total`: calculate gross first, then round the total or net.
 
-### Why have Extended, Compact, and Minors modes?
+By explicitly including both fields, RelMon ensures that all systems derive identical monetary values from the same inputs, preventing subtle discrepancies due to rounding differences. This is especially important for DL1, where derivation is necessary.
 
-- **Extended** (`e`): All fields included, full precision and reconstructibility.
+### Why is the default rounding mode - "heven", and the default rounding application - "tax"?
+
+RelMon chooses `heven` (**half-even**) as the default rounding mode because it is widely used in finance and accounting for minimizing cumulative rounding bias:
+
+- It avoids systematic upward or downward drift when summing multiple rounded amounts (e.g., across many components or invoices).
+- It is consistent with common financial standards in banking, accounting, and tax reporting.
+
+The default `tax` application is chosen because:
+
+- Rounding the tax first (`tax = round(net * taxRate)`) is more consistent with legal and fiscal practices, where tax amounts are usually calculated per line item or per subtotal.
+- It ensures that `gross = net + tax` remains exact, minimizing discrepancies when summing across multiple components.
+- It aligns naturally with the typical use case: most systems know the net amount and compute tax as the primary derived value.
+
+Together, these defaults provide a safe, finance-compatible baseline for deterministic calculations, allowing implementers to override them only if a specific business rule or legal requirement dictates otherwise.
+
+### Why have Compact and Minors modes?
+
 - **Compact** (`c`): Shortened field names to save bandwidth or storage.
 - **Minors** (`m`): Integer representation for systems that operate in the smallest unit (e.g., cents, satoshis).
 
