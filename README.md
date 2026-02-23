@@ -263,7 +263,7 @@ Monetary values in RelMon MAY be negative. Implementations MUST handle negative 
 - The `net`, `gross`, and `tax` fields MAY be negative (prefixed with `-` symbol) in both decimal and minors representations.
 - Positive values MUST NOT have any prefix (no `+` prefix).
 - All root-level fields (`net`, `gross`, and `tax`) MUST have the same sign.
-- Components MAY independently be positive or negative, but each component's `net` and `tax` MUST share the same sign.
+- Components MAY independently be positive or negative, but each component's `net`, `gross`, and `tax` MUST share the same sign.
 - Rounding modes specified in the `rounding` field apply symmetrically to negative values.
 
 Implementations MUST ensure that arithmetic consistency rules (`gross = net + tax` and component sums) remain valid even when values are negative.
@@ -342,10 +342,10 @@ For example, `precision = 2` means rounding to two decimal places: `10.336 --> 1
   - Example `precision = 3` --> all `100.000`, `100.00`, `100.0` are valid
 - If `precision` is not specified, the effective precision MUST be inferred from the monetary values (`net`, `tax`, `gross`).
   ```
-  if explicitPrecision is specified
-    precision = explicitPrecision
+  if RelMonObject.precision is specified
+    precision = RelMonObject.precision
   else
-    precision = inferred from net | tax | gross
+    precision = inferred from RelMonObject.net | RelMonObject.tax | RelMonObject.gross
   ```
 - The number of decimal places used by monetary values MUST NOT exceed the declared or inferred precision.
 - In **minors** mode (`m`) `precision` is not REQUIRED, but it MAY be specified for representational purposes.
@@ -420,7 +420,7 @@ RelMon defines the following rules for validating monetary values:
 
 - **Data types**
   - All fields MUST conform to their abstract type definitions.
-  - `net`, `tax`, and `gross` MUST be decimals unless **Minors mode** (`m`) is active, in which case they all MUST be integers. 
+  - `net`, `tax`, and `gross` MUST be decimals unless **minors mode** (`m`) is active, in which case they all MUST be integers. 
 - **Consistency**
   - `gross = net + tax`
   - `net = gross - tax`
@@ -444,18 +444,18 @@ RelMon defines the following rules for validating monetary values:
 
 **Root-level fields**
 
-| Field                       | Compact notation | Type                | Possible values                                                                              | Default value                             | DL1                                                                               | DL2                                                                               | DL3                                   | Description                                               |
-|-----------------------------|------------------|---------------------|----------------------------------------------------------------------------------------------|-------------------------------------------|-----------------------------------------------------------------------------------|-----------------------------------------------------------------------------------|---------------------------------------|-----------------------------------------------------------|
-| protocol                    | p                | ProtocolIdentifier  | N/A                                                                                          | N/A                                       | REQUIRED                                                                          | REQUIRED                                                                          | REQUIRED                              | The protocol version, determinism level and modes         |
-| net                         | n                | decimal \| integer  | N/A                                                                                          | N/A                                       | Derived from `gross`.                                                             | REQUIRED                                                                          | OPTIONAL (if `gross` provided)        | Total net amount                                          |
-| gross                       | g                | decimal \| integer  | N/A                                                                                          | N/A                                       | Derived from `net`                                                                | REQUIRED                                                                          | OPTIONAL (if `net` provided)          | Total gross amount                                        |
-| tax                         | t                | decimal \| integer  | N/A                                                                                          | N/A                                       | OPTIONAL                                                                          | OPTIONAL                                                                          | REQUIRED                              | Total tax amount                                          |
-| taxRate                     | tr               | decimal(6,3)        | N/A                                                                                          | N/A                                       | REQUIRED (if calculation scope = `r` and tax rate is the same for all components) | REQUIRED (if calculation scope = `r` and tax rate is the same for all components) | OPTIONAL                              | Tax rate, if it is the same for all components            |
-| unit                        | u                | text                | N/A                                                                                          | N/A                                       | OPTIONAL                                                                          | OPTIONAL                                                                          | OPTIONAL                              | Unit code (e.g. ISO4217)                                  |
-| precision                   | pr               | integer             | N/A                                                                                          | N/A                                       | OPTIONAL                                                                          | OPTIONAL                                                                          | OPTIONAL                              | Number of decimal places                                  |
-| scope                       | s                | text                | `c`, `r`                                                                                     | `r`                                       | OPTIONAL                                                                          | OPTIONAL                                                                          | OPTIONAL                              | Calculation scope                                         |
-| rounding{mode, application} | r{m, a}          | text                | `{"mode": "haway" \| "hzero" \| "heven" \| "up" \| "down", "application": "tax" \| "total"}` | `{"mode": "heven", "application": "tax"}` | OPTIONAL                                                                          | OPTIONAL                                                                          | OPTIONAL                              | Rounding mode                                             |
-| components                  | cs               | MonetaryComponent[] | N/A                                                                                          | N/A                                       | OPTIONAL (if calculation scope = `r`)                                             | OPTIONAL (if calculation scope = `r`)                                             | OPTIONAL (if calculation scope = `r`) | List of components (necessary if calculation scope = `c`) |
+| Field                       | Compact notation | Type                | Possible values                                                                              | Default value                             | DL1                                                                               | DL2                                                                               | DL3                                   | Description                                       |
+|-----------------------------|------------------|---------------------|----------------------------------------------------------------------------------------------|-------------------------------------------|-----------------------------------------------------------------------------------|-----------------------------------------------------------------------------------|---------------------------------------|---------------------------------------------------|
+| protocol                    | p                | ProtocolIdentifier  | N/A                                                                                          | N/A                                       | REQUIRED                                                                          | REQUIRED                                                                          | REQUIRED                              | The protocol version, determinism level and modes |
+| net                         | n                | decimal \| integer  | N/A                                                                                          | N/A                                       | Derived from `gross`.                                                             | REQUIRED                                                                          | OPTIONAL (if `gross` provided)        | Total net amount                                  |
+| gross                       | g                | decimal \| integer  | N/A                                                                                          | N/A                                       | Derived from `net`                                                                | REQUIRED                                                                          | OPTIONAL (if `net` provided)          | Total gross amount                                |
+| tax                         | t                | decimal \| integer  | N/A                                                                                          | N/A                                       | OPTIONAL                                                                          | OPTIONAL                                                                          | REQUIRED                              | Total tax amount                                  |
+| taxRate                     | tr               | decimal(6,3)        | N/A                                                                                          | N/A                                       | REQUIRED (if calculation scope = `r` and tax rate is the same for all components) | REQUIRED (if calculation scope = `r` and tax rate is the same for all components) | OPTIONAL                              | Tax rate, if it is the same for all components    |
+| unit                        | u                | text                | N/A                                                                                          | N/A                                       | OPTIONAL                                                                          | OPTIONAL                                                                          | OPTIONAL                              | Unit code (e.g. ISO4217)                          |
+| precision                   | pr               | integer             | N/A                                                                                          | N/A                                       | OPTIONAL                                                                          | OPTIONAL                                                                          | OPTIONAL                              | Number of decimal places                          |
+| scope                       | s                | text                | `c`, `r`                                                                                     | `r`                                       | OPTIONAL                                                                          | OPTIONAL                                                                          | OPTIONAL                              | Calculation scope                                 |
+| rounding{mode, application} | r{m, a}          | text                | `{"mode": "haway" \| "hzero" \| "heven" \| "up" \| "down", "application": "tax" \| "total"}` | `{"mode": "heven", "application": "tax"}` | OPTIONAL                                                                          | OPTIONAL                                                                          | OPTIONAL                              | Rounding mode                                     |
+| components                  | cs               | MonetaryComponent[] | N/A                                                                                          | N/A                                       | OPTIONAL (if calculation scope = `r`)                                             | OPTIONAL (if calculation scope = `r`)                                             | OPTIONAL (if calculation scope = `r`) | List of components (if calculation scope = `c`)   |
 
 **Component-level fields**
 
@@ -471,7 +471,7 @@ RelMon defines the following rules for validating monetary values:
 
 RelMon defines multiple **concrete default data format implementations** to represent the abstract monetary model. This section provides a high-level overview and references for each format.
 
-Default format implementations as of this version of the protocol are: JSON, XML, and multiple URI-based notations - JSON, XML, minimalistic DL3 textual representation.
+Default format implementations as of this version of the protocol are: JSON, XML, and multiple URI-based notations - JSON, XML, and minimalistic DL3 textual representation.
 
 RelMon MAY be implemented in any other data format.
 
@@ -573,6 +573,20 @@ The name of the field containing the URI-based notation of RelMon MAY be arbitra
 
 This section is **informative only** and does not contain requirements. It explains key design decisions of RelMon to help implementers understand its rationale.
 
+### Why does RelMon exist and how can it help systems?
+
+RelMon exists because monetary data exchanged between systems is prone to silent inconsistencies. Two systems may independently compute the same invoice and arrive at different results due to differing rounding modes, precision, derivation order, or implicit assumptions about which value is authoritative.
+
+Without a shared contract, these discrepancies are often discovered late - during reconciliation, auditing, or customer disputes - and are difficult to trace back to their root cause.
+
+RelMon addresses this by providing an explicit, agreed-upon protocol that defines:
+
+- which monetary values are provided and which are derived;
+- how rounding and precision are applied;
+- what the authoritative calculation sequence is.
+
+By adopting RelMon, systems establish a deterministic contract for monetary data exchange, eliminating ambiguity and ensuring that all parties reconstruct identical results from the same inputs.
+
 ### Why different determinism levels?
 
 Determinism levels (DL1–DL3) exist to define how much arithmetic is REQUIRED by consuming systems to reconstruct monetary values. They allow systems to adapt their implementations depending on what the data provider can or wants to supply:
@@ -605,6 +619,16 @@ RelMon does not restrict how systems internally store or compute values. Systems
 
 To support tax rates with **fractional precision**, e.g., 12.35% or 0.625%. The (6,3) format allows up to 999.999% while keeping three decimal places, which covers nearly all real-world tax regimes.
 
+### Why is specifying different tax rates within a single component not allowed?
+
+A `MonetaryComponent` represents a single taxable unit - one line item, one charge, or one fee - at a single tax rate. This is a deliberate design constraint.
+
+Allowing multiple tax rates within a single component would require defining how those rates interact: whether they are additive, compounded (tax-on-tax), or applied in sequence. This introduces significant complexity in derivation, rounding order, and validation, which would undermine the protocol's goal of deterministic simplicity.
+
+For items subject to multiple tax rates, the recommended approach is to split them into separate components, each with its own tax rate. This keeps the derivation rules unambiguous and the validation straightforward.
+
+Support for compound or multi-rate taxation within a single component may be considered in a future major version of the protocol.
+
 ### Why provide a `precision` field?
 
 Precision defines the **maximum decimal places** for monetary values. This ensures that values are consistently formatted and interpreted across systems. It is optional and MAY be provided to make derivation parameters explicit. If not specified, precision is inferred from the provided monetary values.
@@ -635,7 +659,7 @@ The default `tax` application is chosen because:
 
 Together, these defaults provide a safe, finance-compatible baseline for deterministic calculations, allowing implementers to override them only if a specific business rule or legal requirement dictates otherwise.
 
-### Why have Compact and Minors modes?
+### Why have compact and minors modes?
 
 - **Compact** (`c`): Shortened field names to save bandwidth or storage.
 - **Minors** (`m`): Integer representation for systems that operate in the smallest unit (e.g., cents, satoshis).
@@ -656,10 +680,11 @@ To allow **maximum interoperability**. The abstract model defines **semantic mea
 
 ## Changelog
 
-| Date       | Version | Description                                   |
-|------------|---------|-----------------------------------------------|
-| 2026-01-17 | 1.0.0   | First draft version of the protocol published |
-| 2026-02-23 | 1.0.0   | Reworked the draft version of the protocol    |
+| Date       | Version    | Description                                   |
+|------------|------------|-----------------------------------------------|
+| 2026-01-17 | draft      | First draft version of the protocol published |
+| 2026-02-22 | draft      | Reworked the draft version of the protocol    |
+| 2026-02-23 | 1.0.0-beta | BETA 1.0.0 version                            |
 
 ## TODOs
 
