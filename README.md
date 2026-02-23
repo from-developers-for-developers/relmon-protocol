@@ -1,5 +1,7 @@
 # Reliable Monetary data protocol (RelMon protocol)
 
+**Current protocol version: 1.0.0-beta**
+
 ## Table of contents
 
 * [Reliable Monetary data protocol (RelMon protocol)](#reliable-monetary-data-protocol-relmon-protocol)
@@ -31,13 +33,15 @@
     * [XML](#xml)
     * [URI-based notations](#uri-based-notations)
   * [FAQ and design rationale](#faq-and-design-rationale)
+    * [Why does RelMon exist and how can it help systems?](#why-does-relmon-exist-and-how-can-it-help-systems)
     * [Why different determinism levels?](#why-different-determinism-levels)
     * [Why not allow arbitrary precision for net, tax, and gross?](#why-not-allow-arbitrary-precision-for-net-tax-and-gross)
     * [Why is `taxRate` a decimal(6,3)?](#why-is-taxrate-a-decimal63)
+    * [Why is specifying different tax rates within a single component not allowed?](#why-is-specifying-different-tax-rates-within-a-single-component-not-allowed)
     * [Why provide a `precision` field?](#why-provide-a-precision-field)
     * [Why include a rounding mode and application field?](#why-include-a-rounding-mode-and-application-field)
     * [Why is the default rounding mode - "heven", and the default rounding application - "tax"?](#why-is-the-default-rounding-mode---heven-and-the-default-rounding-application---tax)
-    * [Why have Compact and Minors modes?](#why-have-compact-and-minors-modes)
+    * [Why have compact and minors modes?](#why-have-compact-and-minors-modes)
     * [Can RelMon handle cryptocurrencies like BTC or ETH?](#can-relmon-handle-cryptocurrencies-like-btc-or-eth)
     * [Why allow negative values?](#why-allow-negative-values)
     * [Why is the protocol language, storage, and data format agnostic?](#why-is-the-protocol-language-storage-and-data-format-agnostic)
@@ -77,6 +81,8 @@ Protocol identifiers include the version, for example:
 - `relmon@1.0.0` – abstract protocol version 1.0.0
 
 Implementations **MUST respect protocol versioning** to ensure compatibility between systems.
+
+The version number reflects changes to the abstract protocol model and constraints only. Editorial changes to this document — such as fixing typos, improving wording, or reorganizing sections — do not constitute a version change, provided the protocol semantics remain unchanged.
 
 ## License
 
