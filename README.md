@@ -62,7 +62,7 @@ An example of a RelMon object in JSON format (determinism level 3):
 
 The key words **MUST**, **MUST NOT**, **REQUIRED**, **shall**, **shall NOT**, **SHOULD**, **SHOULD NOT**, **RECOMMENDED**, **MAY**, and **OPTIONAL** in this document are to be interpreted as described in [RFC 2119](https://datatracker.ietf.org/doc/html/rfc2119).
 
-These terms define **normative requirements** for implementers and clarify which behavior is mandatory, RECOMMENDED, or optional.
+These terms define **normative requirements** for implementers and clarify which behavior is mandatory, recommended, or optional.
 
 ## Versioning 
 
@@ -116,11 +116,13 @@ Concrete default data format implementations of the protocol are defined separat
 - `?` indicates an OPTIONAL field
 - `:` indicates a type (`object`, `list`, `decimal`, `integer`, `text`)
 - `=` indicates a value
+- `<xxx>` indicates a field interpolated in the textual type, where `xxx` is the field name
 - `|` - a separator for enum values
 - `[?` indicates the OPTIONAL part
 - `...` indicates that the construction can be repeated multiple times
 - `[]` indicates an ordered list
 - `decimal(p, s)` indicates a decimal number with at most `p` total digits and at most `s` fractional digits
+- `#` indicates a clarifying comment
 - Capitalized identifiers denote abstract types
 
 ### The model
@@ -128,21 +130,24 @@ Concrete default data format implementations of the protocol are defined separat
 ```
 RelMonObject: object =
 {
-    protocol: ProtocolIdentifier
+    protocol:    ProtocolIdentifier
 
-    net?: decimal | integer
-    gross?: decimal | integer
-    tax?: decimal | integer
-    taxRate?: decimal(6, 3)
+    # either net or gross is required
+    net?:        decimal | integer
+    gross?:      decimal | integer
+    
+    # either tax or taxRate is required
+    tax?:        decimal | integer 
+    taxRate?:    decimal(6, 3)
 
-    unit?: text
-    precision?: integer
-    scope?: CalculationScope
-    rounding?: Rounding
+    unit?:       text
+    precision?:  integer
+    scope?:      CalculationScope
+    rounding?:   Rounding
     components?: MonetaryComponent[]
 }
 
-ProtocolIdentifier: text = "relmon@MAJOR.MINOR.PATCH/DeterminismLevel[?:MODE[?.MODE...]]"
+ProtocolIdentifier: text = "relmon@<MAJOR>.<MINOR>.<PATCH>/<DeterminismLevel>[?:<MODE>[?.<MODE>...]]"
 MAJOR: integer
 MINOR: integer
 PATCH: integer
@@ -152,17 +157,59 @@ DeterminismLevel: integer = 1 | 2 | 3
 CalculationScope: text = "r" | "c"
 
 Rounding: object = {
-    mode?: text = "haway" | "hzero" | "heven" | "up" | "down",
+    mode?:        text = "haway" | "hzero" | "heven" | "up" | "down"
     application?: text = "tax" | "total"
 }
 
 MonetaryComponent: object =
 {
-    net?: decimal | integer
-    gross?: decimal | integer
-    tax?: decimal | integer
+    # either net or gross is required
+    net?:     decimal | integer
+    gross?:   decimal | integer
+    
+    # either tax or taxRate is required
+    tax?:     decimal | integer
     taxRate?: decimal(6, 3)
+    
     comment?: text
+}
+```
+
+An example of RelMonObject using the same logical notation:
+
+```
+RelMonObject = {
+    protocol = "relmon@1.0.0/3:m"
+    net = 20000
+    gross = 24200
+    tax = 4200
+    taxRate = 21.00
+    unit = "EUR"
+    precision = 2
+    scope = "c"
+
+    rounding = { 
+        mode = "heven"
+        application = "tax"
+    }
+
+    components = [
+        {
+            net = 10000
+            gross = 12100
+            tax = 2100
+            taxRate = 21.00
+            comment = "Test component for demonstrating the RelMonObject"
+        },
+        
+        {
+            net = 10000
+            gross = 12100
+            tax = 2100
+            taxRate = 21.00
+            comment = "Another component"
+        }
+    ]
 }
 ```
 
