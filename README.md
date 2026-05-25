@@ -30,9 +30,6 @@
     * [Summary table of the model fields](#summary-table-of-the-model-fields)
     * [Extensions](#extensions)
   * [Concrete default data format implementations](#concrete-default-data-format-implementations)
-    * [JSON](#json)
-    * [XML](#xml)
-    * [URI-based notations](#uri-based-notations)
   * [FAQ and design rationale](#faq-and-design-rationale)
     * [Why does RelMon exist and how can it help systems?](#why-does-relmon-exist-and-how-can-it-help-systems)
     * [Why different determinism levels?](#why-different-determinism-levels)
@@ -51,11 +48,11 @@
 
 ## Introduction
 
-This document specifies the **RelMon protocol** (Reliable Monetary Data Protocol, hereinafter referred to as **RelMon**) and defines its **concrete default data format implementations**.
+This document specifies the **RelMon protocol** (Reliable Monetary Data Protocol, hereinafter referred to as **RelMon**) and defines its **abstract logical model** and **protocol semantics**.
 
 RelMon ensures deterministic reconstruction of monetary components across systems. By standardizing the structure and semantics of monetary data, it ensures interoperable implementations across diverse systems, preserving **exact monetary values**, full precision, consistent rounding, and, following the maximum determinism level, a **derivation-free approach** for net, tax, and gross amounts.
 
-RelMon is programming language-, storage-, and data format-agnostic, defining only the **abstract logical model** and **the concrete default data format implementations**.
+RelMon is programming language-, storage-, and data format-agnostic, defining only the **abstract logical model** and **protocol rules**.
 
 An example of a RelMon object in JSON format (determinism level 3):
 
@@ -116,7 +113,7 @@ This notation is:
 - **Non-executable**
 - **Not intended to be parsed or used as a schema language**
 
-Concrete default data format implementations of the protocol are defined separately.
+Concrete default data format implementations of the protocol are defined in separate documents.
 
 **Legend**
 
@@ -532,105 +529,25 @@ Example:
 
 ## Concrete default data format implementations
 
-RelMon defines multiple **concrete default data format implementations** to represent the abstract monetary model. This section provides a high-level overview and references for each format.
+RelMon defines multiple **concrete default data format implementations** to represent the abstract monetary model.
 
-Default format implementations as of this version of the protocol are: JSON, XML, and multiple URI-based notations - JSON, XML, and minimalistic DL3 textual representation.
+Default format implementations as of this version of the protocol are:
+
+- JSON
+- XML
+- URI-based notations
 
 RelMon MAY be implemented in any other data format.
 
-The **abstract model** remains unchanged across formats; these implementations define **how the abstract fields map to JSON, XML, or URI-based representations**.
+The **abstract model** remains unchanged across formats; implementation documents define **how the abstract fields map to concrete representations**.
 
-### JSON
+The official implementation documents are:
 
-- All modes of the protocol are supported.
-- The name of the element containing a RelMon object MAY be arbitrary.
+- [implementation-json.md](implementation-json.md)
+- [implementation-xml.md](implementation-xml.md)
+- [implementation-uri.md](implementation-uri.md)
 
-The following example shows a RelMon object at DL3 with `components` (calculation scope = `c`).
-
-```json
-{
-    "protocol": "relmon@1.0.0/3",
-    "net": "100.00",
-    "gross": "121.00",
-    "tax": "21.00",
-    "taxRate": "21.00",
-    "unit": "EUR",
-    "precision": 2,
-    "scope": "c",
-    "rounding": {"mode": "haway", "application": "tax"},
-    "components": [
-        {
-            "net": "50.00",
-            "gross": "60.50",
-            "tax": "10.50",
-            "taxRate": "21.00",
-            "comment": "Base price of item 1"
-        },
-        {
-            "net": "50.00",
-            "gross": "60.50",
-            "tax": "10.50",
-            "taxRate": "21.00",
-            "comment": "Base price of item 2"
-        }
-    ]
-}
-```
-
-Another example (DL1) in **compact** mode.
-
-```json
-{"p": "relmon@1.0.0/1:c", "n": "100.00", "tr": "21.00"}
-```
-
-### XML
-
-- All modes of the protocol are supported.
-- The root name of the element MAY be arbitrary (e.g. `<Money>`, `<Price>`, etc.).
-
-The following example shows a RelMon object at DL3 without `components`.
-
-```xml
-<RelMon>
-    <protocol>relmon@1.0.0/3</protocol>
-    <net>100.00</net>
-    <gross>121.00</gross>
-    <tax>21.00</tax>
-    <taxRate>21.00</taxRate>
-    <unit>EUR</unit>
-    <precision>2</precision>
-    <rounding>
-        <mode>haway</mode>
-        <application>tax</application>
-    </rounding>
-</RelMon>
-```
-
-Another example (DL3) in **compact** and **minors** mode, with the OPTIONAL `unit` field.
-
-```xml
-<RelMon>
-    <p>relmon@1.0.0/3:c.m</p>
-    <n>10000</n>
-    <g>12100</g>
-    <t>2100</t>
-    <u>EUR</u>
-</RelMon>
-```
-
-### URI-based notations
-
-URI-based notations are compact, single-string representations suitable for **URLs**, **QR codes**, or **lightweight transfers**.
-
-All modes are supported in all URI-based notations.
-
-The name of the field containing the URI-based notation of RelMon MAY be arbitrary.
-
-| Scheme              | Description                                                                                                                                                                                                                                                                                                                                                      | Format                                                  | Example                                                                                                                                                                 |
-|---------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------| 
-| `relmon-json://...` | JSON representation encoded in base64url as defined in RFC 4648 Section 5                                                                                                                                                                                                                                                                                        | `relmon-json://base64EncodedJson`                       | `relmon-json://eyJwIjogInJlbG1vbkAxLjAuMC8xOmMiLCAibiI6ICIxMDAuMDAiLCAidHIiOiAiMjEuMDAifQ==`                                                                            |
-| `relmon-xml://...`  | XML representation encoded in base64url as defined in RFC 4648 Section 5                                                                                                                                                                                                                                                                                         | `relmon-xml://base64EncodedXml`                         | `relmon-xml://PFJlbE1vbj4KICAgIDxwPnJlbG1vbkAxLjAuMC8zOmMubTwvcD4KICAgIDxuPjEwMDAwPC9uPgogICAgPGc-MTIxMDA8L2c-CiAgICA8dD4yMTAwPC90PgogICAgPHU-RVVSPC91Pgo8L1JlbE1vbj4=` |
-| `relmon-min://...`  | Minimalistic textual representation with DL3 containing only the protocol identifier, net, gross, and tax values separated by `;`.<br/><br/>**Note**:<br/>- In this notation the `ProtocolIdentifier` is shortened by removing `relmon@` prefix.<br/>-This notation supports minors via `m` mode.<br/> - The compact mode `c` is not supported in this notation. | `relmon-min://<ProtocolIdentifier>;<net>;<gross>;<tax>` | `relmon-min://1.0.0/3:m;10000;12100;2100`                                                                                                                               |
+If an implementation document conflicts with this document, this core specification governs protocol semantics.
 
 ## FAQ and design rationale
 
@@ -753,6 +670,7 @@ To allow **maximum interoperability**. The abstract model defines **semantic mea
 | 2026-02-22 | draft      | Reworked the draft version of the protocol                                                                                                      |
 | 2026-02-23 | 1.0.0-beta | BETA 1.0.0 version                                                                                                                              |
 | 2026-05-25 | 1.0.0-beta | Introduced extensions to the protocol. Added extra information about tax rate and arithmethics of converting minors to decimals and vice-versa. |
+| 2026-05-25 | 1.0.0-beta | Split the core semantics of the protocol and implementations (in separate files).                                                               |
 
 ## TODOs
 
