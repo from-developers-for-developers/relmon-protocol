@@ -6,47 +6,47 @@
 
 * [Reliable Monetary data protocol (RelMon protocol)](#reliable-monetary-data-protocol-relmon-protocol)
   * [Table of contents](#table-of-contents)
-  * [Introduction](#introduction)
-  * [Key words](#key-words)
-  * [Versioning](#versioning-)
-  * [License](#license)
-  * [Abstract logical model](#abstract-logical-model)
-    * [Notation](#notation)
-    * [The model](#the-model)
-  * [Protocol specification](#protocol-specification)
-    * [Protocol identifier](#protocol-identifier)
-      * [Protocol modes](#protocol-modes)
-    * [Monetary values](#monetary-values)
-    * [Signed values semantics](#signed-values-semantics)
-    * [Determinism levels](#determinism-levels)
-    * [Calculation scope](#calculation-scope)
-    * [Arithmetics](#arithmetics)
-      * [Precision](#precision)
-      * [Tax rate precision](#tax-rate-precision)
-      * [Rounding modes](#rounding-modes)
-      * [Rounding application](#rounding-application)
-      * [Rounding function](#rounding-function)
-    * [Validation rules](#validation-rules)
-    * [Summary table of the model fields](#summary-table-of-the-model-fields)
-    * [Extensions](#extensions)
-  * [Concrete default data format implementations](#concrete-default-data-format-implementations)
-  * [FAQ and design rationale](#faq-and-design-rationale)
-    * [Why does RelMon exist and how can it help systems?](#why-does-relmon-exist-and-how-can-it-help-systems)
-    * [Why different determinism levels?](#why-different-determinism-levels)
-    * [Why not allow arbitrary precision for net, tax, and gross?](#why-not-allow-arbitrary-precision-for-net-tax-and-gross)
-    * [Why does `taxRate` allow up to 3 fractional digits?](#why-does-taxrate-allow-up-to-3-fractional-digits)
-    * [Why is specifying different tax rates within a single component not allowed?](#why-is-specifying-different-tax-rates-within-a-single-component-not-allowed)
-    * [Why provide a `precision` field?](#why-provide-a-precision-field)
-    * [Why include a rounding mode and application field?](#why-include-a-rounding-mode-and-application-field)
-    * [Why is the default rounding mode - "heven", and the default rounding application - "tax"?](#why-is-the-default-rounding-mode---heven-and-the-default-rounding-application---tax)
-    * [Why have compact and minors modes?](#why-have-compact-and-minors-modes)
-    * [Can RelMon handle cryptocurrencies like BTC or ETH?](#can-relmon-handle-cryptocurrencies-like-btc-or-eth)
-    * [Why allow negative values?](#why-allow-negative-values)
-    * [Why is the protocol language, storage, and data format agnostic?](#why-is-the-protocol-language-storage-and-data-format-agnostic)
-  * [Changelog](#changelog)
-  * [TODOs](#todos)
+  * [1. Introduction](#1-introduction)
+  * [2. Key words](#2-key-words)
+  * [3. Versioning](#3-versioning)
+  * [4. License](#4-license)
+  * [5. Abstract logical model](#5-abstract-logical-model)
+    * [5.1. Notation](#51-notation)
+    * [5.2. The model](#52-the-model)
+  * [6. Protocol specification](#6-protocol-specification)
+    * [6.1. Protocol identifier](#61-protocol-identifier)
+      * [6.1.1. Protocol modes](#611-protocol-modes)
+    * [6.2. Monetary values](#62-monetary-values)
+    * [6.3. Signed values semantics](#63-signed-values-semantics)
+    * [6.4. Determinism levels](#64-determinism-levels)
+    * [6.5. Calculation scope](#65-calculation-scope)
+    * [6.6. Arithmetics](#66-arithmetics)
+      * [6.6.1. Precision](#661-precision)
+      * [6.6.2. Tax rate precision](#662-tax-rate-precision)
+      * [6.6.3. Rounding modes](#663-rounding-modes)
+      * [6.6.4. Rounding application](#664-rounding-application)
+      * [6.6.5. Rounding function](#665-rounding-function)
+    * [6.7. Validation rules](#67-validation-rules)
+    * [6.8. Summary table of the model fields](#68-summary-table-of-the-model-fields)
+    * [6.9. Extensions](#69-extensions)
+  * [7. Concrete default data format implementations](#7-concrete-default-data-format-implementations)
+  * [8. FAQ and design rationale](#8-faq-and-design-rationale)
+    * [8.1. Why does RelMon exist and how can it help systems?](#81-why-does-relmon-exist-and-how-can-it-help-systems)
+    * [8.2. Why different determinism levels?](#82-why-different-determinism-levels)
+    * [8.3. Why not allow arbitrary precision for net, tax, and gross?](#83-why-not-allow-arbitrary-precision-for-net-tax-and-gross)
+    * [8.4. Why does `taxRate` allow up to 3 fractional digits?](#84-why-does-taxrate-allow-up-to-3-fractional-digits)
+    * [8.5. Why is specifying different tax rates within a single component not allowed?](#85-why-is-specifying-different-tax-rates-within-a-single-component-not-allowed)
+    * [8.6. Why provide a `precision` field?](#86-why-provide-a-precision-field)
+    * [8.7. Why include a rounding mode and application field?](#87-why-include-a-rounding-mode-and-application-field)
+    * [8.8. Why is the default rounding mode - "heven", and the default rounding application - "tax"?](#88-why-is-the-default-rounding-mode---heven-and-the-default-rounding-application---tax)
+    * [8.9. Why have compact and minors modes?](#89-why-have-compact-and-minors-modes)
+    * [8.10. Can RelMon handle cryptocurrencies like BTC or ETH?](#810-can-relmon-handle-cryptocurrencies-like-btc-or-eth)
+    * [8.11. Why allow negative values?](#811-why-allow-negative-values)
+    * [8.12. Why is the protocol language, storage, and data format agnostic?](#812-why-is-the-protocol-language-storage-and-data-format-agnostic)
+  * [9. Changelog](#9-changelog)
+  * [10. TODOs](#10-todos)
 
-## Introduction
+## 1. Introduction
 
 This document specifies the **RelMon protocol** (Reliable Monetary Data Protocol, hereinafter referred to as **RelMon**) and defines its **abstract logical model** and **protocol semantics**.
 
@@ -60,13 +60,13 @@ An example of a RelMon object in JSON format (determinism level 3):
 {"protocol": "relmon@1.0.0/3", "net": "100.00", "tax": "21.00", "gross": "121.00"}
 ```
 
-## Key words
+## 2. Key words
 
 The key words **MUST**, **MUST NOT**, **REQUIRED**, **shall**, **shall NOT**, **SHOULD**, **SHOULD NOT**, **RECOMMENDED**, **MAY**, and **OPTIONAL** in this document are to be interpreted as described in [RFC 2119](https://datatracker.ietf.org/doc/html/rfc2119).
 
 These terms define **normative requirements** for implementers and clarify which behavior is mandatory, recommended, or optional.
 
-## Versioning 
+## 3. Versioning
 
 The RelMon specification uses [Semantic Versioning 2.0.0](https://semver.org/):
 
@@ -82,7 +82,7 @@ Implementations **MUST respect protocol versioning** to ensure compatibility bet
 
 The version number reflects changes to the abstract protocol model and constraints only. Editorial changes to this document — such as fixing typos, improving wording, or reorganizing sections — do not constitute a version change, provided the protocol semantics remain unchanged.
 
-## License
+## 4. License
 
 The RelMon specification is published as an **open and freely usable standard**.
 
@@ -101,9 +101,9 @@ It does **not impose any licensing requirements** on implementations, SDKs, or s
 
 For the full license text, see [this file](LICENSE).
 
-## Abstract logical model
+## 5. Abstract logical model
 
-### Notation
+### 5.1. Notation
 
 The specification uses an **informal abstract data model notation** to describe the logical structure of RelMon monetary values.
 
@@ -129,7 +129,7 @@ Concrete default data format implementations of the protocol are defined in sepa
 - `#` indicates a clarifying comment
 - Capitalized identifiers denote abstract types
 
-### The model
+### 5.2. The model
 
 ```
 RelMonObject: object =
@@ -219,19 +219,19 @@ RelMonObject = {
 }
 ```
 
-## Protocol specification
+## 6. Protocol specification
 
 - The abstract model does not prescribe JSON, XML, URI, or binary layouts. 
 - Concrete data format implementations map abstract fields to specific formats, as defined in separate sections.
 - All decimal values MUST use `.` symbol as a decimal separator.
 
-### Protocol identifier
+### 6.1. Protocol identifier
 
 - **Protocol version**: `protocol` MUST follow the defined `ProtocolIdentifier` format and reflect the SemVer version of the abstract model.
 - **Protocol determinism level**: protocol identifier MUST include the determinism level of the protocol. 
 - **Protocol modes**: `protocol` MAY define its modes affecting the format and fields of the protocol. Available modes are: `c` (compact), `m` (minors).
 
-#### Protocol modes
+#### 6.1.1. Protocol modes
 
 RelMon defines modes that modify the format and field set of the protocol. 
 The modes MUST NOT change the logical model of the protocol. 
@@ -260,7 +260,7 @@ The order of mode declaration MUST NOT affect the RelMon logical model.
 
 An example: `relmon@1.0.0/3:c.m`.
 
-### Monetary values
+### 6.2. Monetary values
 
 - The `net`, `gross`, and `tax` fields represent canonical monetary values.
 - They MUST be represented as decimals unless the `m` mode (minors) is used.
@@ -269,7 +269,7 @@ An example: `relmon@1.0.0/3:c.m`.
 - Monetary values on the root-level and component-level MAY use different lexical scales, as long as none of them exceeds the declared or inferred `precision`.
 - When the `unit` represents a fiat currency, it is RECOMMENDED for implementations to use the corresponding ISO 4217 currency code in the `unit` field. Examples: `EUR`, `USD`, `RUB`.
 
-### Signed values semantics
+### 6.3. Signed values semantics
 
 Monetary values in RelMon MAY be negative. Implementations MUST handle negative values as follows:
 
@@ -286,7 +286,7 @@ Implementations MUST ensure that arithmetic consistency rules remain valid even 
 - for negative values: `gross <= net`, `tax <= 0`, and `tax >= gross`
 - component sums MUST remain consistent with root-level values
 
-### Determinism levels
+### 6.4. Determinism levels
 
 RelMon defines several determinism levels. A determinism level defines how many monetary values MUST be derived from other fields.
 
@@ -301,7 +301,7 @@ Determinism levels are hereinafter referred to as "DL".
 | DL2 | Derived values partially materialized to ensure consistency. A derived value is included even though it can be recomputed. | `net` and `gross` and `taxRate` | - Materialized values MUST match recomputed values.<br/>- `net` and `gross` are authoritative values. |
 | DL3 | Monetary values explicitly provided. No derivation needed or precision-loss-safe derivation available. | `net` and `tax` and/or `gross` and `tax` | - `gross = net + tax`<br/>- `net = gross - tax` |
 
-### Calculation scope
+### 6.5. Calculation scope
 
 One of the following calculation scopes MUST be used:
 
@@ -331,7 +331,7 @@ Implementations MUST use the **default** calculation scope `"r"`, unless:
 - an explicit calculation scope is specified;
 - or a mutual agreement for the default value is set among involved systems.
 
-### Arithmetics
+### 6.6. Arithmetics
 
 - Implementations MUST NOT perform floating-point arithmetic, unless such arithmetic guarantees identical results.
 - Implementations MUST produce results identical to exact decimal arithmetic under the declared:
@@ -350,7 +350,7 @@ Implementations MUST use the **default** calculation scope `"r"`, unless:
   - normalized integer tax rate to decimal form: divide by `10^taxRatePrecision`
 - Percentage-based formulas therefore use `taxRateDivisor = 100 * 10^taxRatePrecision`.
 
-#### Precision
+#### 6.6.1. Precision
 
 Precision defines the scale at which rounding occurs.
 For example, `precision = 2` means rounding to two decimal places: `10.336 -> 10.34`.
@@ -368,7 +368,7 @@ For example, `precision = 2` means rounding to two decimal places: `10.336 -> 10
 - The number of decimal places used by monetary values MUST NOT exceed the declared or inferred precision.
 - In minors mode (`m`), `precision` is not REQUIRED, but it MAY be specified for representational purposes.
 
-#### Tax rate precision
+#### 6.6.2. Tax rate precision
 
 `taxRate` uses its own decimal scale and is independent from monetary `precision`.
 
@@ -376,7 +376,7 @@ For example, `precision = 2` means rounding to two decimal places: `10.336 -> 10
 - Valid examples include: `21`, `21.0`, `21.00`, `21.000`, `0.625`.
 - Root-level and component-level `taxRate` values MAY use different lexical scales, as long as each value does not exceed 3 fractional digits.
 
-#### Rounding modes
+#### 6.6.3. Rounding modes
 
 RelMon supports the following rounding modes:
 
@@ -393,7 +393,7 @@ Implementations MUST use the **default** rounding mode `heven`, unless:
 - an explicit rounding mode is specified;
 - or a mutual agreement for the default value is set among involved systems.
 
-#### Rounding application
+#### 6.6.4. Rounding application
 
 Rounding MAY be applied to:
 
@@ -405,7 +405,7 @@ Implementations MUST use the **default** rounding application `tax`, unless:
 - an explicit rounding application is specified;
 - or a mutual agreement for the default value is set among involved systems.
 
-#### Rounding function
+#### 6.6.5. Rounding function
 
 RelMon defines a deterministic rounding function: `round(value, precision, roundingMode = "heven")`, where:
 
@@ -440,7 +440,7 @@ Rounding MUST be applied in accordance with `roundingApplication`.
     tax = gross - net
     ```
 
-### Validation rules
+### 6.7. Validation rules
 
 RelMon defines the following rules for validating monetary values:
 
@@ -474,7 +474,7 @@ RelMon defines the following rules for validating monetary values:
   - The sum of all component `gross` values MUST equal the root-level `gross`.
   - The sum of all component `tax` values MUST equal the root-level `tax`.
 
-### Summary table of the model fields
+### 6.8. Summary table of the model fields
 
 **Root-level fields**
 
@@ -503,7 +503,7 @@ RelMon defines the following rules for validating monetary values:
 | comment | `c` | text | N/A | N/A | OPTIONAL | OPTIONAL | OPTIONAL | Arbitrary comment for a component |
 | extensions | N/A | object | N/A | N/A | OPTIONAL | OPTIONAL | OPTIONAL | Container for implementation-specific fields |
 
-### Extensions
+### 6.9. Extensions
 
 RelMon payloads MAY contain fields not defined by the core abstract model.
 
@@ -527,7 +527,7 @@ Example:
 }
 ```
 
-## Concrete default data format implementations
+## 7. Concrete default data format implementations
 
 RelMon defines multiple **concrete default data format implementations** to represent the abstract monetary model.
 
@@ -549,11 +549,11 @@ The official implementation documents are:
 
 If an implementation document conflicts with this document, this core specification governs protocol semantics.
 
-## FAQ and design rationale
+## 8. FAQ and design rationale
 
 This section is **informative only** and does not contain requirements. It explains key design decisions of RelMon to help implementers understand its rationale.
 
-### Why does RelMon exist and how can it help systems?
+### 8.1. Why does RelMon exist and how can it help systems?
 
 RelMon exists because monetary data exchanged between systems is prone to silent inconsistencies. Two systems may independently compute the same invoice and arrive at different results due to differing rounding modes, precision, derivation order, or implicit assumptions about which value is authoritative.
 
@@ -567,7 +567,7 @@ RelMon addresses this by providing an explicit, agreed-upon protocol that define
 
 By adopting RelMon, systems establish a deterministic contract for monetary data exchange, eliminating ambiguity and ensuring that all parties reconstruct identical results from the same inputs.
 
-### Why different determinism levels?
+### 8.2. Why different determinism levels?
 
 Determinism levels (DL1–DL3) exist to define how much arithmetic is REQUIRED by consuming systems to reconstruct monetary values. They allow systems to adapt their implementations depending on what the data provider can or wants to supply:
 
@@ -577,7 +577,7 @@ Determinism levels (DL1–DL3) exist to define how much arithmetic is REQUIRED b
 
 Determinism levels define a contract between data providers and consumers, clarifying what calculations are expected and what is guaranteed, while still maintaining full precision and consistent rounding.
 
-### Why not allow arbitrary precision for net, tax, and gross?
+### 8.3. Why not allow arbitrary precision for net, tax, and gross?
 
 RelMon intentionally restricts monetary values to a defined `precision` to ensure **deterministic reconstruction and consistent validation across systems**.
 
@@ -595,13 +595,13 @@ By requiring that all monetary values respect the declared precision:
 
 RelMon does not restrict how systems internally store or compute values. Systems MAY use higher internal precision during calculations, but values exchanged through the protocol MUST conform to the declared precision to ensure interoperability and deterministic behavior.
 
-### Why does `taxRate` allow up to 3 fractional digits?
+### 8.4. Why does `taxRate` allow up to 3 fractional digits?
 
 To support tax rates with fractional precision, e.g. `12.35` or `0.625`. RelMon allows `taxRate` values with at most 3 fractional digits, which covers nearly all real-world tax regimes while keeping validation and interoperability straightforward.
 
 Examples of valid forms include `21`, `21.0`, `21.00`, `21.000`, and `0.625`.
 
-### Why is specifying different tax rates within a single component not allowed?
+### 8.5. Why is specifying different tax rates within a single component not allowed?
 
 A `MonetaryComponent` represents a single taxable unit - one line item, one charge, or one fee - at a single tax rate. This is a deliberate design constraint.
 
@@ -611,13 +611,13 @@ For items subject to multiple tax rates, the recommended approach is to split th
 
 Support for compound or multi-rate taxation within a single component may be considered in a future major version of the protocol.
 
-### Why provide a `precision` field?
+### 8.6. Why provide a `precision` field?
 
 `precision` defines the maximum number of decimal places for monetary values. This ensures that exchanged values are interpreted consistently across systems while still allowing different lexical scales such as `100`, `100.0`, and `100.00`, provided they do not exceed the declared or inferred precision.
 
 If `precision` is omitted, it is inferred from the provided monetary values as the maximum scale among them.
 
-### Why include a rounding mode and application field?
+### 8.7. Why include a rounding mode and application field?
 
 Rounding rules are critical for deterministic monetary calculations. Even with the same net, tax, and gross values, different rounding methods can produce mismatched results across systems.
 
@@ -628,7 +628,7 @@ Rounding rules are critical for deterministic monetary calculations. Even with t
 
 By explicitly including both fields, RelMon ensures that all systems derive identical monetary values from the same inputs, preventing subtle discrepancies due to rounding differences. This is especially important for DL1, where derivation is necessary.
 
-### Why is the default rounding mode - "heven", and the default rounding application - "tax"?
+### 8.8. Why is the default rounding mode - "heven", and the default rounding application - "tax"?
 
 RelMon chooses `heven` (**half-even**) as the default rounding mode because it is widely used in finance and accounting for minimizing cumulative rounding bias:
 
@@ -643,26 +643,26 @@ The default `tax` application is chosen because:
 
 Together, these defaults provide a safe, finance-compatible baseline for deterministic calculations, allowing implementers to override them only if a specific business rule or legal requirement dictates otherwise.
 
-### Why have compact and minors modes?
+### 8.9. Why have compact and minors modes?
 
 - **Compact** (`c`): Shortened field names to save bandwidth or storage.
 - **Minors** (`m`): Integer representation for systems that operate in the smallest unit (e.g., cents, satoshis).
 
 These modes give flexibility while maintaining **semantic consistency**.
 
-### Can RelMon handle cryptocurrencies like BTC or ETH?
+### 8.10. Can RelMon handle cryptocurrencies like BTC or ETH?
 
 Yes. While ISO 4217 codes are suggested for fiat currencies, **custom currencies** are supported via the `unit` field. **Minors** mode can store satoshis, wei, or other smallest units as integers.
 
-### Why allow negative values?
+### 8.11. Why allow negative values?
 
 Negative values represent refunds, reversals, credits, or discounts. Consistent rules ensure that **arithmetic invariants** (`gross = net + tax`) and component sums remain valid, even when values are negative.
 
-### Why is the protocol language, storage, and data format agnostic?
+### 8.12. Why is the protocol language, storage, and data format agnostic?
 
 To allow **maximum interoperability**. The abstract model defines **semantic meaning**, while concrete data format implementations (JSON, XML, URI) map these fields into specific representations. This ensures consistency across systems, programming languages, and storage backends, and allows scaling across a wide range of computing systems.
 
-## Changelog
+## 9. Changelog
 
 | Date       | Version    | Description                                                                                                                                     |
 |------------|------------|-------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -671,8 +671,9 @@ To allow **maximum interoperability**. The abstract model defines **semantic mea
 | 2026-02-23 | 1.0.0-beta | BETA 1.0.0 version                                                                                                                              |
 | 2026-05-25 | 1.0.0-beta | Introduced extensions to the protocol. Added extra information about tax rate and arithmethics of converting minors to decimals and vice-versa. |
 | 2026-05-25 | 1.0.0-beta | Split the core semantics of the protocol and implementations (in separate files).                                                               |
+| 2026-05-25 | 1.0.0-beta | Added numbering of the sections.                                                                                                                |
 
-## TODOs
+## 10. TODOs
 
 - Add OpenAPI schema for JSON format.
 - Add XSD for XML format.
