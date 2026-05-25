@@ -747,11 +747,12 @@ To allow **maximum interoperability**. The abstract model defines **semantic mea
 
 ## Changelog
 
-| Date       | Version    | Description                                   |
-|------------|------------|-----------------------------------------------|
-| 2026-01-17 | draft      | First draft version of the protocol published |
-| 2026-02-22 | draft      | Reworked the draft version of the protocol    |
-| 2026-02-23 | 1.0.0-beta | BETA 1.0.0 version                            |
+| Date       | Version    | Description                                                                                                                                     |
+|------------|------------|-------------------------------------------------------------------------------------------------------------------------------------------------|
+| 2026-01-17 | draft      | First draft version of the protocol published                                                                                                   |
+| 2026-02-22 | draft      | Reworked the draft version of the protocol                                                                                                      |
+| 2026-02-23 | 1.0.0-beta | BETA 1.0.0 version                                                                                                                              |
+| 2026-05-25 | 1.0.0-beta | Introduced extensions to the protocol. Added extra information about tax rate and arithmethics of converting minors to decimals and vice-versa. |
 
 ## TODOs
 
